@@ -11,38 +11,34 @@ public struct CollapsedNotchWingView: View {
     }
 
     public var body: some View {
-        HStack {
+        HStack(alignment: .center) {
             // Ala Izquierda
             leftWingView
 
-            Spacer(minLength: hasHardwareNotch ? 195 : 16)
+            Spacer(minLength: hasHardwareNotch ? 190 : 14)
 
             // Ala Derecha
             rightWingView
         }
-        .padding(.horizontal, 18)
-        .frame(height: 40)
+        .padding(.horizontal, 14)
+        .frame(height: 34)
     }
 
     @ViewBuilder
     private var leftWingView: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             Image(systemName: snapshot.phase.systemImageName)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(snapshot.phase.accentColor)
 
-            if snapshot.phase == .idle {
-                Text("Pomodoro")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.secondary)
-            } else if snapshot.overtimeSeconds > 0 {
+            if snapshot.overtimeSeconds > 0 {
                 Text("+\(formatSeconds(snapshot.overtimeSeconds))")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .font(.system(size: 11.5, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundColor(.yellow)
             } else {
                 Text(formatSeconds(snapshot.remainingSeconds))
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .font(.system(size: 11.5, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundColor(.white)
             }
@@ -52,33 +48,36 @@ public struct CollapsedNotchWingView: View {
     @ViewBuilder
     private var rightWingView: some View {
         HStack(spacing: 6) {
-            if snapshot.phase == .work || snapshot.phase == .shortBreak || snapshot.phase == .longBreak {
-                // Anillo de progreso radial compacto
-                ZStack {
-                    Circle()
-                        .stroke(Color.white.opacity(0.2), lineWidth: 2.5)
-                    Circle()
-                        .trim(from: 0, to: CGFloat(snapshot.progress))
-                        .stroke(
-                            snapshot.phase.accentColor,
-                            style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
-                        )
-                        .rotationEffect(.degrees(-90))
-                }
-                .frame(width: 14, height: 14)
-
-                // Indicador de bloque del ciclo [● ● ○ ○]
-                HStack(spacing: 3) {
-                    ForEach(1...snapshot.totalBlocksInCycle, id: \.self) { index in
-                        Circle()
-                            .fill(index <= snapshot.currentBlockInCycle ? snapshot.phase.accentColor : Color.white.opacity(0.2))
-                            .frame(width: 4, height: 4)
-                    }
-                }
-            } else {
-                Text(snapshot.currentPreset.name.prefix(6))
-                    .font(.system(size: 10, weight: .medium))
+            // Nombre de la tarea o fase abreviada
+            if let taskTitle = snapshot.currentTaskTitle, !taskTitle.isEmpty {
+                Text(taskTitle)
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .frame(maxWidth: 85, alignment: .trailing)
+            }
+
+            // Anillo de progreso radial compacto
+            ZStack {
+                Circle()
+                    .stroke(Color.white.opacity(0.18), lineWidth: 2)
+                Circle()
+                    .trim(from: 0, to: CGFloat(snapshot.progress))
+                    .stroke(
+                        snapshot.phase.accentColor,
+                        style: StrokeStyle(lineWidth: 2, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+            }
+            .frame(width: 13, height: 13)
+
+            // Indicador de bloques del ciclo [●●○○]
+            HStack(spacing: 2.5) {
+                ForEach(1...snapshot.totalBlocksInCycle, id: \.self) { index in
+                    Circle()
+                        .fill(index <= snapshot.currentBlockInCycle ? snapshot.phase.accentColor : Color.white.opacity(0.2))
+                        .frame(width: 3.5, height: 3.5)
+                }
             }
         }
     }

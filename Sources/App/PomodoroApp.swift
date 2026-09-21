@@ -82,11 +82,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowController.isExpandedProvider = { [weak coordinator] in
             coordinator?.isExpanded ?? false
         }
+        windowController.isActiveProvider = { [weak coordinator] in
+            coordinator?.isIslandActive ?? false
+        }
         self.windowController = windowController
         coordinator.panel = windowController.panel
+        coordinator.windowController = windowController
 
         setupStatusItem()
-        windowController.show()
+        // No mostrar de inmediato si está en idle
+        if coordinator.isIslandActive {
+            windowController.show()
+        }
     }
 
     private func setupStatusItem() {
