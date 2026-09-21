@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Representa las fases temporales del ciclo Pomodoro.
-public enum PomodoroPhase: String, CaseIterable, Sendable, Codable {
+public enum PomodoroPhase: String, CaseIterable, Sendable, Codable, Equatable {
     case idle
     case work
     case shortBreak

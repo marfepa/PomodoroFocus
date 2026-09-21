@@ -59,24 +59,175 @@ final class PomodoroCoreEngineTests: XCTestCase {
         XCTAssertEqual(snap.internalInterruptionsCount, 1)
         XCTAssertEqual(snap.phase, .work, "La regla de Cirillo exige que la interrupción interna no detenga la fase")
 
-        // Expirar bloque 1 de 2 -> debe transicionar a descanso corto
-        let phaseAfter1 = await engine.transitionOnExpiry()
-        XCTAssertEqual(phaseAfter1, .shortBreak)
-        snap = await engine.getSnapshot()
-        XCTAssertEqual(snap.currentBlockInCycle, 2)
+        // El trabajo vencido entra en flow y cuenta el pomodoro, sin saltar al descanso.
+        let expired = Date().addingTimeInterval(11)
+        let overtime = await engine.enterOvertime(at: expired)
+        XCTAssertEqual(overtime, .overtime)
+        snap = await engine.getSnapshot(at: expired)
+        XCTAssertEqual(snap.currentBlockInCycle, 1)
+        XCTAssertEqual(snap.completedBlocksInCycle, 1)
+        XCTAssertEqual(snap.completedPomodorosToday, 1)
+        XCTAssertGreaterThan(snap.overtimeSeconds, 0)
+
+        // Una segunda llamada no vuelve a contar el mismo bloque.
+        let stillOvertime = await engine.enterOvertime(at: expired.addingTimeInterval(5))
+        XCTAssertEqual(stillOvertime, .overtime)
+        snap = await engine.getSnapshot(at: expired)
         XCTAssertEqual(snap.completedPomodorosToday, 1)
 
-        // Expirar descanso corto -> reset to idle
-        let phaseAfterBreak = await engine.transitionOnExpiry()
-        XCTAssertEqual(phaseAfterBreak, .idle)
+        // Tomar descanso abre el corto y deja el bloque 2 preparado.
+        let breakPhase = await engine.beginBreak(at: expired)
+        XCTAssertEqual(breakPhase, .shortBreak)
+        snap = await engine.getSnapshot()
+        XCTAssertEqual(snap.completedBlocksInCycle, 1)
 
-        // Iniciar bloque 2 de 2
+        let phaseAfterBreak = await engine.transitionOnExpiry(at: Date().addingTimeInterval(20))
+        XCTAssertEqual(phaseAfterBreak, .idle)
+        snap = await engine.getSnapshot()
+        XCTAssertEqual(snap.currentBlockInCycle, 2)
+
+        // Bloque 2 de 2 cierra el ciclo con descanso largo.
         await engine.startWork(taskTitle: "Completar tarea")
-        // Expirar bloque 2 de 2 -> debe transicionar a descanso largo
-        let phaseAfter2 = await engine.transitionOnExpiry()
-        XCTAssertEqual(phaseAfter2, .longBreak)
+        let secondExpiry = Date().addingTimeInterval(11)
+        let secondOvertime = await engine.enterOvertime(at: secondExpiry)
+        XCTAssertEqual(secondOvertime, .overtime)
+        let longBreak = await engine.beginBreak(at: secondExpiry)
+        XCTAssertEqual(longBreak, .longBreak)
         snap = await engine.getSnapshot()
         XCTAssertEqual(snap.completedPomodorosToday, 2)
+        XCTAssertEqual(snap.phase, .longBreak)
+
+        let afterLongBreak = await engine.transitionOnExpiry(at: Date().addingTimeInterval(20))
+        XCTAssertEqual(afterLongBreak, .idle)
+        snap = await engine.getSnapshot()
+        XCTAssertEqual(snap.currentBlockInCycle, 1)
+        XCTAssertEqual(snap.completedBlocksInCycle, 0)
+    }
+
+    func testBeginBreakBeforeExpiryDoesNothing() async {
+        let engine = PomodoroCoreEngine(preset: .testFast)
+        await engine.startWork()
+        let phase = await engine.beginBreak(at: Date())
+        XCTAssertEqual(phase, .work)
+    }
+
+    func testCancelResetsCycleButKeepsInterruptions() async {
+        let engine = PomodoroCoreEngine(preset: .testFast)
+        await engine.startWork(taskTitle: "Borrador")
+        await engine.recordInterruption(type: .external, note: "Llamada")
+        await engine.resetToIdle()
+        let snap = await engine.getSnapshot()
+        XCTAssertEqual(snap.phase, .idle)
+        XCTAssertEqual(snap.currentBlockInCycle, 1)
+        XCTAssertNil(snap.currentTaskTitle)
+        XCTAssertEqual(snap.externalInterruptionsCount, 1)
+    }
+
+    func testDayRolloverClearsTodayCount() async {
+        let engine = PomodoroCoreEngine(preset: .testFast)
+        await engine.startWork()
+        let later = Date().addingTimeInterval(11)
+        _ = await engine.enterOvertime(at: later)
+        var checkpoint = await engine.exportCheckpoint(at: later)
+        XCTAssertEqual(checkpoint.completedPomodorosToday, 1)
+
+        checkpoint.dayStamp = "1999-01-01"
+        await engine.importCheckpoint(checkpoint, at: later)
+        let snap = await engine.getSnapshot(at: later)
+        XCTAssertEqual(snap.completedPomodorosToday, 0)
+    }
+
+    func testSessionStoreRoundTrip() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let store = SessionStore(fileURL: directory.appendingPathComponent("session.json"))
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let record = InterruptionRecord(
+            type: .internal,
+            note: "Revisar el correo",
+            timestamp: now,
+            phase: .work,
+            associatedTask: "Informe"
+        )
+        let checkpoint = EngineCheckpoint(
+            phase: .work,
+            presetID: PomodoroPreset.standard25.id,
+            taskTitle: "Informe",
+            currentBlockInCycle: 2,
+            completedBlocksInCycle: 1,
+            nextBlockInCycle: 3,
+            completedPomodorosToday: 1,
+            dayStamp: PomodoroDay.stamp(now),
+            isPaused: false,
+            pausedRemainingTime: 0,
+            duration: 25 * 60,
+            startTimestamp: now,
+            targetTimestamp: now.addingTimeInterval(25 * 60),
+            interruptions: [record]
+        )
+        let settings = PersistedSettings(
+            presetID: PomodoroPreset.deep45.id,
+            workShortcutName: "Trabajo",
+            defaultShortcutName: "Descanso",
+            enableFocusAutomation: false,
+            shouldMinimizeOnStart: false
+        )
+        store.save(PersistedSession(settings: settings, checkpoint: checkpoint))
+        let loaded = try XCTUnwrap(store.load())
+        XCTAssertEqual(loaded.settings, settings)
+        XCTAssertEqual(loaded.checkpoint.taskTitle, "Informe")
+        XCTAssertEqual(loaded.checkpoint.interruptions.first?.note, "Revisar el correo")
+
+        try? FileManager.default.removeItem(at: directory)
+    }
+
+    func testExpiredWorkRestoresAsOvertimeOnce() async {
+        let engine = PomodoroCoreEngine()
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let checkpoint = EngineCheckpoint(
+            phase: .work,
+            presetID: PomodoroPreset.testFast.id,
+            taskTitle: "Cerrado",
+            currentBlockInCycle: 1,
+            completedBlocksInCycle: 0,
+            nextBlockInCycle: 1,
+            completedPomodorosToday: 0,
+            dayStamp: PomodoroDay.stamp(start),
+            isPaused: false,
+            pausedRemainingTime: 0,
+            duration: 10,
+            startTimestamp: start,
+            targetTimestamp: start.addingTimeInterval(10),
+            interruptions: []
+        )
+        let now = start.addingTimeInterval(30)
+        await engine.importCheckpoint(checkpoint, at: now)
+        let snap = await engine.getSnapshot(at: now)
+        XCTAssertEqual(snap.phase, .overtime)
+        XCTAssertEqual(snap.completedPomodorosToday, 1)
+        XCTAssertEqual(snap.completedBlocksInCycle, 1)
+
+        await engine.importCheckpoint(await engine.exportCheckpoint(at: now), at: now.addingTimeInterval(5))
+        let again = await engine.getSnapshot(at: now)
+        XCTAssertEqual(again.completedPomodorosToday, 1)
+    }
+
+    func testIslandGeometryMatchesHitRect() {
+        let metrics = DisplayNotchMetrics(
+            frame: CGRect(x: 0, y: 0, width: 180, height: 32),
+            hasHardwareNotch: true,
+            screenFrame: CGRect(x: 0, y: 0, width: 1400, height: 900)
+        )
+        let geometry = IslandGeometry.current(
+            metrics: metrics,
+            isExpanded: true,
+            isQuickCapturePresented: false,
+            phase: .overtime
+        )
+        XCTAssertEqual(geometry.width, 350)
+        XCTAssertEqual(geometry.height, 118)
+        let rect = geometry.rect(panelWidth: 660, panelHeight: 280)
+        XCTAssertEqual(rect.midX, 330, accuracy: 0.001)
+        XCTAssertEqual(rect.maxY, 280, accuracy: 0.001)
     }
 
     func testPauseAndResumeDeterminism() async {

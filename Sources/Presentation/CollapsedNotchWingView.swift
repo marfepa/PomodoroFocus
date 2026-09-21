@@ -32,12 +32,12 @@ public struct CollapsedNotchWingView: View {
                 .foregroundColor(snapshot.phase.accentColor)
 
             if snapshot.overtimeSeconds > 0 {
-                Text("+\(formatSeconds(snapshot.overtimeSeconds))")
+                Text("+\(PomodoroTimeFormat.string(from: snapshot.overtimeSeconds))")
                     .font(.system(size: 11.5, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundColor(.yellow)
             } else {
-                Text(formatSeconds(snapshot.remainingSeconds))
+                Text(PomodoroTimeFormat.string(from: snapshot.remainingSeconds))
                     .font(.system(size: 11.5, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundColor(.white)
@@ -82,10 +82,4 @@ public struct CollapsedNotchWingView: View {
         }
     }
 
-    private func formatSeconds(_ seconds: TimeInterval) -> String {
-        let total = Int(max(0, seconds))
-        let minutes = total / 60
-        let secs = total % 60
-        return String(format: "%02d:%02d", minutes, secs)
-    }
 }

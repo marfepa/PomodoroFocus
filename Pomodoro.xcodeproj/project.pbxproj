@@ -8,17 +8,22 @@
 
 /* Begin PBXBuildFile section */
 		06D722311F5DAC976F2E7F5A /* PomodoroPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3203C6C17E6FBD750D6C0C9 /* PomodoroPreset.swift */; };
+		12DCC386427B8C2C1CB83254 /* NotificationIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109C96D719A7872CD87B9FD9 /* NotificationIntegrationTests.swift */; };
 		1990E03083609EB11EBA7543 /* Interruption.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237E2BB88E92FA8938055286 /* Interruption.swift */; };
 		1B2E23CE182A39EF37400D97 /* DynamicNotchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE7DFE7F2AAD98BE4AF6EC48 /* DynamicNotchPanel.swift */; };
 		1FFF95ADC3DAD09B66159AB2 /* CollapsedNotchWingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B0A90EEE72245558739B421 /* CollapsedNotchWingView.swift */; };
 		27BA431BCF0200D560F19725 /* DynamicIslandSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DA7E4A3B45DE845C0B10EA6 /* DynamicIslandSurface.swift */; };
 		30E7A8DAF48EA609925F7AEC /* PomodoroStateCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD8CBE73136EC13BAF64E99 /* PomodoroStateCalculator.swift */; };
+		33549FD1BBBEAB4905821F28 /* IslandGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AA5191C19C759A642D57512 /* IslandGeometry.swift */; };
 		4BC5BDC7FBC7DA6AC686D444 /* PomodoroPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC01F39F4608E489CD527008 /* PomodoroPhase.swift */; };
 		55D64D7D25B4D1F927043921 /* SessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EC37F0B291F6FA904E0152B /* SessionCoordinator.swift */; };
 		5DDBF6B67849373D8734F154 /* PomodoroApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57AE167C7F4EE07C19F0A815 /* PomodoroApp.swift */; };
+		7217FC29C9651427E1EB2C9D /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F6E670D12EEE891CC40E7C /* NotificationService.swift */; };
 		848B5CDECB49099967DE1BE9 /* PomodoroFocusFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B382191BA514DDF0B775E3A7 /* PomodoroFocusFilter.swift */; };
 		89D31F23C4FE33979E2DFE77 /* QuickInterruptionCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB945D70ED60F1C053176F92 /* QuickInterruptionCaptureView.swift */; };
+		9B621809D8F40587E89FC671 /* PomodoroTimeFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A0EEA5E39918FCAC520D8A3 /* PomodoroTimeFormat.swift */; };
 		A33E72A0AC566B9E3C4817BD /* SystemFocusController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5CC580B2820CE6CCAB13E36 /* SystemFocusController.swift */; };
+		A431DE520D9E560E14E473FB /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5C53D470FC4F62DED01A52 /* SessionStore.swift */; };
 		B1EA73F0B039D4C8218E9AB7 /* PomodoroCoreEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C9FA777D5141978147827A9 /* PomodoroCoreEngine.swift */; };
 		CD95B7FCD12394F0D628B503 /* NotchWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8308A867358650FD80E1F778 /* NotchWindowController.swift */; };
 		CE3DE3B532C1F30F14ED7862 /* ExpandedIslandView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4214EFC48C79C812669AAC8F /* ExpandedIslandView.swift */; };
@@ -40,19 +45,24 @@
 /* Begin PBXFileReference section */
 		07CF0C9983F3E731012743BC /* PomodoroCoreEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroCoreEngineTests.swift; sourceTree = "<group>"; };
 		0DA7E4A3B45DE845C0B10EA6 /* DynamicIslandSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicIslandSurface.swift; sourceTree = "<group>"; };
+		109C96D719A7872CD87B9FD9 /* NotificationIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationIntegrationTests.swift; sourceTree = "<group>"; };
 		13AE08D9A779DE0DA2F45A23 /* PomodoroTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PomodoroTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		237E2BB88E92FA8938055286 /* Interruption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Interruption.swift; sourceTree = "<group>"; };
 		2C9FA777D5141978147827A9 /* PomodoroCoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroCoreEngine.swift; sourceTree = "<group>"; };
 		2EC37F0B291F6FA904E0152B /* SessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCoordinator.swift; sourceTree = "<group>"; };
 		337D6873615E31F32C3D5C87 /* DisplayNotchMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayNotchMetrics.swift; sourceTree = "<group>"; };
 		339CEAD70013B57F6B2271C1 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
+		3A0EEA5E39918FCAC520D8A3 /* PomodoroTimeFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroTimeFormat.swift; sourceTree = "<group>"; };
 		4214EFC48C79C812669AAC8F /* ExpandedIslandView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpandedIslandView.swift; sourceTree = "<group>"; };
 		57AE167C7F4EE07C19F0A815 /* PomodoroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroApp.swift; sourceTree = "<group>"; };
+		5AA5191C19C759A642D57512 /* IslandGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandGeometry.swift; sourceTree = "<group>"; };
 		5B0A90EEE72245558739B421 /* CollapsedNotchWingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollapsedNotchWingView.swift; sourceTree = "<group>"; };
 		5BD8CBE73136EC13BAF64E99 /* PomodoroStateCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroStateCalculator.swift; sourceTree = "<group>"; };
+		5C5C53D470FC4F62DED01A52 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		63C3248B9FAB5C802C03D8BA /* Pomodoro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pomodoro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EE552E8C8F84473AA37EB5F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8308A867358650FD80E1F778 /* NotchWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchWindowController.swift; sourceTree = "<group>"; };
+		95F6E670D12EEE891CC40E7C /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		A3203C6C17E6FBD750D6C0C9 /* PomodoroPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroPreset.swift; sourceTree = "<group>"; };
 		B382191BA514DDF0B775E3A7 /* PomodoroFocusFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroFocusFilter.swift; sourceTree = "<group>"; };
 		CB945D70ED60F1C053176F92 /* QuickInterruptionCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickInterruptionCaptureView.swift; sourceTree = "<group>"; };
@@ -70,6 +80,7 @@
 				EC01F39F4608E489CD527008 /* PomodoroPhase.swift */,
 				A3203C6C17E6FBD750D6C0C9 /* PomodoroPreset.swift */,
 				5BD8CBE73136EC13BAF64E99 /* PomodoroStateCalculator.swift */,
+				3A0EEA5E39918FCAC520D8A3 /* PomodoroTimeFormat.swift */,
 			);
 			path = Domain;
 			sourceTree = "<group>";
@@ -97,8 +108,11 @@
 			children = (
 				337D6873615E31F32C3D5C87 /* DisplayNotchMetrics.swift */,
 				FE7DFE7F2AAD98BE4AF6EC48 /* DynamicNotchPanel.swift */,
+				5AA5191C19C759A642D57512 /* IslandGeometry.swift */,
 				8308A867358650FD80E1F778 /* NotchWindowController.swift */,
+				95F6E670D12EEE891CC40E7C /* NotificationService.swift */,
 				B382191BA514DDF0B775E3A7 /* PomodoroFocusFilter.swift */,
+				5C5C53D470FC4F62DED01A52 /* SessionStore.swift */,
 				F5CC580B2820CE6CCAB13E36 /* SystemFocusController.swift */,
 			);
 			path = Infrastructure;
@@ -135,6 +149,7 @@
 		B938B63954F5255163F5E1B6 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				109C96D719A7872CD87B9FD9 /* NotificationIntegrationTests.swift */,
 				07CF0C9983F3E731012743BC /* PomodoroCoreEngineTests.swift */,
 			);
 			path = Tests;
@@ -227,6 +242,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				12DCC386427B8C2C1CB83254 /* NotificationIntegrationTests.swift in Sources */,
 				ED27D972EBA7383C50C7B16B /* PomodoroCoreEngineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -241,16 +257,20 @@
 				1B2E23CE182A39EF37400D97 /* DynamicNotchPanel.swift in Sources */,
 				CE3DE3B532C1F30F14ED7862 /* ExpandedIslandView.swift in Sources */,
 				1990E03083609EB11EBA7543 /* Interruption.swift in Sources */,
+				33549FD1BBBEAB4905821F28 /* IslandGeometry.swift in Sources */,
 				D30B8B1AFF80960B49F0E977 /* MainWindowView.swift in Sources */,
 				CD95B7FCD12394F0D628B503 /* NotchWindowController.swift in Sources */,
+				7217FC29C9651427E1EB2C9D /* NotificationService.swift in Sources */,
 				5DDBF6B67849373D8734F154 /* PomodoroApp.swift in Sources */,
 				B1EA73F0B039D4C8218E9AB7 /* PomodoroCoreEngine.swift in Sources */,
 				848B5CDECB49099967DE1BE9 /* PomodoroFocusFilter.swift in Sources */,
 				4BC5BDC7FBC7DA6AC686D444 /* PomodoroPhase.swift in Sources */,
 				06D722311F5DAC976F2E7F5A /* PomodoroPreset.swift in Sources */,
 				30E7A8DAF48EA609925F7AEC /* PomodoroStateCalculator.swift in Sources */,
+				9B621809D8F40587E89FC671 /* PomodoroTimeFormat.swift in Sources */,
 				89D31F23C4FE33979E2DFE77 /* QuickInterruptionCaptureView.swift in Sources */,
 				55D64D7D25B4D1F927043921 /* SessionCoordinator.swift in Sources */,
+				A431DE520D9E560E14E473FB /* SessionStore.swift in Sources */,
 				A33E72A0AC566B9E3C4817BD /* SystemFocusController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -402,6 +422,7 @@
 					"-framework AppKit",
 					"-framework SwiftUI",
 					"-framework AppIntents",
+					"-framework UserNotifications",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.antigravity.pomodoro;
 				SDKROOT = macosx;
@@ -442,6 +463,7 @@
 					"-framework AppKit",
 					"-framework SwiftUI",
 					"-framework AppIntents",
+					"-framework UserNotifications",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.antigravity.pomodoro;
 				SDKROOT = macosx;
