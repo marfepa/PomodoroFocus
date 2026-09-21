@@ -180,6 +180,25 @@ final class PomodoroCoreEngineTests: XCTestCase {
         try? FileManager.default.removeItem(at: directory)
     }
 
+    func testIslandGeometryMatchesHitRect() {
+        let metrics = DisplayNotchMetrics(
+            frame: CGRect(x: 0, y: 0, width: 180, height: 32),
+            hasHardwareNotch: true,
+            screenFrame: CGRect(x: 0, y: 0, width: 1400, height: 900)
+        )
+        let geometry = IslandGeometry.current(
+            metrics: metrics,
+            isExpanded: true,
+            isQuickCapturePresented: false,
+            phase: .overtime
+        )
+        XCTAssertEqual(geometry.width, 350)
+        XCTAssertEqual(geometry.height, 118)
+        let rect = geometry.rect(panelWidth: 660, panelHeight: 280)
+        XCTAssertEqual(rect.midX, 330, accuracy: 0.001)
+        XCTAssertEqual(rect.maxY, 280, accuracy: 0.001)
+    }
+
     func testPauseAndResumeDeterminism() async {
         let engine = PomodoroCoreEngine(preset: .standard25)
         let now = Date()

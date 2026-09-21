@@ -21,8 +21,8 @@ public final class NotchWindowController: NSObject {
 
     private let maxPanelWidth: CGFloat = 660.0
     private let maxPanelHeight: CGFloat = 280.0
-    public var isExpandedProvider: (() -> Bool)?
-    public var isActiveProvider: (() -> Bool)?
+    public var geometryProvider: (() -> IslandGeometry)?
+    public var onMetricsChange: ((DisplayNotchMetrics) -> Void)?
 
     public init(rootView: AnyView) {
         let screen = NSScreen.main ?? NSScreen.screens.first!
@@ -61,17 +61,13 @@ public final class NotchWindowController: NSObject {
     }
 
     private func isPointInsideCapsule(_ point: NSPoint) -> Bool {
-        let isActive = isActiveProvider?() ?? true
-        guard isActive else { return false }
-
-        let isExpanded = isExpandedProvider?() ?? false
-        let capsuleWidth: CGFloat = isExpanded ? 350.0 : (currentMetrics.hasHardwareNotch ? 440.0 : 230.0)
-        let capsuleHeight: CGFloat = isExpanded ? 130.0 : (currentMetrics.hasHardwareNotch ? 38.0 : 34.0)
-
-        let x = (maxPanelWidth - capsuleWidth) / 2.0
-        let y = maxPanelHeight - capsuleHeight
-
-        let capsuleRect = NSRect(x: x, y: y, width: capsuleWidth, height: capsuleHeight)
+        let geometry = geometryProvider?() ?? IslandGeometry.current(
+            metrics: currentMetrics,
+            isExpanded: false,
+            isQuickCapturePresented: false,
+            phase: .idle
+        )
+        let capsuleRect = geometry.rect(panelWidth: maxPanelWidth, panelHeight: maxPanelHeight)
         return capsuleRect.insetBy(dx: -8, dy: -8).contains(point)
     }
 
@@ -93,6 +89,7 @@ public final class NotchWindowController: NSObject {
     public func updatePosition() {
         guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
         currentMetrics = DisplayNotchMetrics.resolve(for: screen)
+        onMetricsChange?(currentMetrics)
         let frame = Self.calculatePanelFrame(
             screen: screen,
             panelWidth: maxPanelWidth,

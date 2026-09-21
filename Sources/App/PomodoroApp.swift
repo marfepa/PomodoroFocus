@@ -77,26 +77,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.coordinator = coordinator
         self.isConfigured = true
 
-        let screen = NSScreen.main ?? NSScreen.screens.first!
-        let metrics = DisplayNotchMetrics.resolve(for: screen)
-
-        let surfaceView = DynamicIslandSurface(coordinator: coordinator, metrics: metrics)
+        let surfaceView = DynamicIslandSurface(coordinator: coordinator)
         let windowController = NotchWindowController(rootView: AnyView(surfaceView))
-        windowController.isExpandedProvider = { [weak coordinator] in
-            coordinator?.isExpanded ?? false
+        windowController.geometryProvider = { [weak coordinator] in
+            guard let coordinator else {
+                return IslandGeometry(width: 230, height: 34, cornerRadius: 17)
+            }
+            return IslandGeometry.current(
+                metrics: coordinator.notchMetrics,
+                isExpanded: coordinator.isExpanded,
+                isQuickCapturePresented: coordinator.isQuickCapturePresented,
+                phase: coordinator.snapshot.phase
+            )
         }
-        windowController.isActiveProvider = { [weak coordinator] in
-            coordinator?.isIslandActive ?? false
+        windowController.onMetricsChange = { [weak coordinator] metrics in
+            coordinator?.notchMetrics = metrics
         }
         self.windowController = windowController
         coordinator.panel = windowController.panel
         coordinator.windowController = windowController
+        coordinator.notchMetrics = windowController.currentMetrics
+        coordinator.onSnapshotChange = { [weak self] snapshot in
+            self?.updateStatusItem(with: snapshot)
+        }
 
         setupStatusItem()
-        // No mostrar de inmediato si está en idle
-        if coordinator.isIslandActive {
-            windowController.show()
-        }
+        updateStatusItem(with: coordinator.snapshot)
+        windowController.show()
     }
 
     private func setupStatusItem() {
@@ -120,6 +127,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         self.statusMenu = menu
         self.statusItem = item
+    }
+
+    private func updateStatusItem(with snapshot: PomodoroSnapshot) {
+        guard let button = statusItem?.button else { return }
+        let time = snapshot.phase == .overtime
+            ? "+\(PomodoroTimeFormat.string(from: snapshot.overtimeSeconds))"
+            : PomodoroTimeFormat.string(from: snapshot.remainingSeconds)
+        button.title = " \(time)"
+        button.image = NSImage(systemSymbolName: snapshot.phase.systemImageName, accessibilityDescription: snapshot.phase.title)
+        button.contentTintColor = statusTint(for: snapshot.phase)
+    }
+
+    private func statusTint(for phase: PomodoroPhase) -> NSColor {
+        switch phase {
+        case .idle:
+            return .secondaryLabelColor
+        case .work:
+            return .systemOrange
+        case .shortBreak:
+            return .systemMint
+        case .longBreak:
+            return .systemCyan
+        case .overtime:
+            return .systemYellow
+        }
     }
 
     @objc private func statusBarButtonClicked(_ sender: NSStatusBarButton) {
