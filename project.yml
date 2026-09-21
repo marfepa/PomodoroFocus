@@ -28,6 +28,7 @@ targets:
           - -framework AppKit
           - -framework SwiftUI
           - -framework AppIntents
+          - -framework UserNotifications
 
   PomodoroTests:
     type: bundle.unit-test

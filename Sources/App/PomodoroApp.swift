@@ -67,6 +67,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
+        Task {
+            _ = await NotificationService.shared.requestAuthorization()
+        }
     }
 
     func setup(coordinator: SessionCoordinator) {
