@@ -4,6 +4,7 @@ import SwiftUI
 public struct MainWindowView: View {
     @Bindable public var coordinator: SessionCoordinator
     @State private var internalDistractionNote: String = ""
+    @State private var distractionType: InterruptionType = .internal
     @State private var showSettings: Bool = false
 
     public init(coordinator: SessionCoordinator) {
@@ -81,6 +82,9 @@ public struct MainWindowView: View {
         }
         .frame(minWidth: 780, minHeight: 560)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onChange(of: coordinator.shouldMinimizeOnStart) { _, _ in
+            coordinator.persistSettings()
+        }
     }
 
     // MARK: - Cabecera
@@ -130,8 +134,8 @@ public struct MainWindowView: View {
                     .animation(.linear(duration: 0.25), value: coordinator.snapshot.progress)
 
                 VStack(spacing: 6) {
-                    if coordinator.snapshot.overtimeSeconds > 0 {
-                        Text("+\(formatSeconds(coordinator.snapshot.overtimeSeconds))")
+                    if coordinator.snapshot.phase == .overtime || coordinator.snapshot.overtimeSeconds > 0 {
+                        Text("+\(PomodoroTimeFormat.string(from: coordinator.snapshot.overtimeSeconds))")
                             .font(.system(size: 48, weight: .bold, design: .monospaced))
                             .monospacedDigit()
                             .foregroundColor(.yellow)
@@ -139,7 +143,7 @@ public struct MainWindowView: View {
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.secondary)
                     } else {
-                        Text(formatSeconds(coordinator.snapshot.remainingSeconds))
+                        Text(PomodoroTimeFormat.string(from: coordinator.snapshot.remainingSeconds))
                             .font(.system(size: 52, weight: .bold, design: .monospaced))
                             .monospacedDigit()
                             .foregroundColor(.primary)
@@ -158,9 +162,9 @@ public struct MainWindowView: View {
                 HStack(spacing: 10) {
                     ForEach(PomodoroPreset.allPresets) { preset in
                         Button {
-                            coordinator.selectedPreset = preset
+                            Task { await coordinator.selectPreset(preset) }
                         } label: {
-                            Text(preset.name)
+                            Text(preset.shortName)
                                 .font(.system(size: 11, weight: .semibold))
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
@@ -229,6 +233,21 @@ public struct MainWindowView: View {
                     }
                     .buttonStyle(.plain)
 
+                    if coordinator.snapshot.phase == .overtime {
+                        Button {
+                            Task { await coordinator.takeBreak() }
+                        } label: {
+                            Label("Tomar descanso", systemImage: "cup.and.saucer.fill")
+                                .font(.system(size: 13, weight: .bold))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(Color.yellow)
+                                .foregroundColor(.black)
+                                .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     if coordinator.snapshot.phase == .shortBreak || coordinator.snapshot.phase == .longBreak {
                         Button {
                             Task {
@@ -283,7 +302,7 @@ public struct MainWindowView: View {
                 Text("Macro-Ciclo")
                     .font(.system(size: 12, weight: .bold))
                 Spacer()
-                Text("Bloque \(coordinator.snapshot.currentBlockInCycle) de \(coordinator.snapshot.totalBlocksInCycle)")
+                Text(cycleLabel)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
             }
@@ -292,11 +311,11 @@ public struct MainWindowView: View {
                 ForEach(1...coordinator.snapshot.totalBlocksInCycle, id: \.self) { idx in
                     ZStack {
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(idx <= coordinator.snapshot.currentBlockInCycle ? Color.orange : Color.secondary.opacity(0.15))
+                            .fill(blockFill(index: idx))
                             .frame(height: 24)
                         Text("\(idx)")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(idx <= coordinator.snapshot.currentBlockInCycle ? .black : .secondary)
+                            .foregroundColor(idx <= coordinator.snapshot.completedBlocksInCycle ? .black : .secondary)
                     }
                 }
             }
@@ -324,7 +343,19 @@ public struct MainWindowView: View {
                 Text("\(coordinator.snapshot.internalInterruptionsCount)")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.orange)
-                Text("Interrupciones (')")
+                Text("Internas (')")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Divider().frame(height: 32)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(coordinator.snapshot.externalInterruptionsCount)")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.cyan)
+                Text("Externas (-)")
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
             }
@@ -337,11 +368,16 @@ public struct MainWindowView: View {
 
     private var distractionCaptureCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Label("Distracción interna (⌘I)", systemImage: "pencil.line")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.orange)
+            Label("Diario de interrupciones", systemImage: "pencil.line")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.orange)
+
+            Picker("Tipo", selection: $distractionType) {
+                Text("Interna (')").tag(InterruptionType.internal)
+                Text("Externa (-)").tag(InterruptionType.external)
             }
+            .pickerStyle(.segmented)
+            .controlSize(.small)
 
             HStack(spacing: 6) {
                 TextField("Anota un pensamiento rápido...", text: $internalDistractionNote)
@@ -362,11 +398,35 @@ public struct MainWindowView: View {
                         .font(.system(size: 16))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Guardar interrupción")
             }
 
-            Text("Guarda la distracción en la lista sin detener el cronómetro.")
-                .font(.system(size: 9))
-                .foregroundColor(.secondary)
+            if coordinator.interruptions.isEmpty {
+                Text("Todavía no hay interrupciones hoy. ⌘I las anota sin parar el tiempo.")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(coordinator.interruptions) { record in
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Text(record.type.notation)
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(record.type == .internal ? .orange : .cyan)
+                                    .frame(width: 12)
+                                Text(record.note)
+                                    .font(.system(size: 11))
+                                    .lineLimit(2)
+                                Spacer(minLength: 4)
+                                Text(record.timestamp, format: .dateTime.hour().minute())
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 120)
+            }
         }
         .padding(12)
         .background(Color.secondary.opacity(0.08))
@@ -388,26 +448,59 @@ public struct MainWindowView: View {
             TextField("Nombre de atajo al descansar", text: $coordinator.defaultShortcutName)
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 10))
+
+            if let focusStatusMessage = coordinator.focusStatusMessage {
+                Text(focusStatusMessage)
+                    .font(.system(size: 10))
+                    .foregroundColor(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(12)
         .background(Color.secondary.opacity(0.08))
         .cornerRadius(10)
+        .onChange(of: coordinator.enableFocusAutomation) { _, _ in
+            coordinator.persistSettings()
+        }
+        .onChange(of: coordinator.workShortcutName) { _, _ in
+            coordinator.persistSettings()
+        }
+        .onChange(of: coordinator.defaultShortcutName) { _, _ in
+            coordinator.persistSettings()
+        }
+    }
+
+    private var cycleLabel: String {
+        let snapshot = coordinator.snapshot
+        switch snapshot.phase {
+        case .work, .overtime:
+            return "Bloque \(snapshot.currentBlockInCycle) de \(snapshot.totalBlocksInCycle)"
+        case .shortBreak, .longBreak, .idle:
+            if snapshot.completedBlocksInCycle > 0 {
+                return "Siguiente: bloque \(snapshot.currentBlockInCycle) de \(snapshot.totalBlocksInCycle)"
+            }
+            return "Bloque \(snapshot.currentBlockInCycle) de \(snapshot.totalBlocksInCycle)"
+        }
+    }
+
+    private func blockFill(index: Int) -> Color {
+        let snapshot = coordinator.snapshot
+        if index <= snapshot.completedBlocksInCycle {
+            return Color.orange
+        }
+        if index == snapshot.currentBlockInCycle && (snapshot.phase == .work || snapshot.phase == .overtime) {
+            return Color.orange.opacity(0.45)
+        }
+        return Color.secondary.opacity(0.15)
     }
 
     private func submitNote() {
         let note = internalDistractionNote.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !note.isEmpty else { return }
+        let type = distractionType
         Task {
-            await coordinator.engine.recordInterruption(type: .internal, note: note)
-            coordinator.snapshot = await coordinator.engine.getSnapshot()
+            await coordinator.recordInterruption(type: type, note: note)
             internalDistractionNote = ""
         }
-    }
-
-    private func formatSeconds(_ seconds: TimeInterval) -> String {
-        let total = Int(max(0, seconds))
-        let minutes = total / 60
-        let secs = total % 60
-        return String(format: "%02d:%02d", minutes, secs)
     }
 }

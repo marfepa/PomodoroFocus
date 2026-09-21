@@ -12,7 +12,7 @@ public struct QuickInterruptionCaptureView: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("Anotar distracción interna (⌘ + I)", systemImage: "pencil.line")
+                Label("Anotar distracción (⌘ + I)", systemImage: "pencil.line")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.orange)
 
@@ -26,7 +26,15 @@ public struct QuickInterruptionCaptureView: View {
                         .font(.system(size: 13))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Cerrar captura")
             }
+
+            Picker("Tipo", selection: $coordinator.quickCaptureType) {
+                Text("Interna (')").tag(InterruptionType.internal)
+                Text("Externa (-)").tag(InterruptionType.external)
+            }
+            .pickerStyle(.segmented)
+            .controlSize(.small)
 
             HStack(spacing: 8) {
                 TextField("Escribe el pensamiento (ej. 'Comprobar vuelos')...", text: $coordinator.quickCaptureText)
@@ -58,7 +66,7 @@ public struct QuickInterruptionCaptureView: View {
                 .buttonStyle(.plain)
             }
 
-            Text("El pensamiento se guardará en tu lista secundaria sin detener el cronómetro.")
+            Text("Queda en el diario de hoy sin detener el cronómetro.")
                 .font(.system(size: 10))
                 .foregroundColor(.secondary)
         }

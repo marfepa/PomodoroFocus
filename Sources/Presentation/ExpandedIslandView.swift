@@ -50,16 +50,31 @@ public struct ExpandedIslandView: View {
                 .buttonStyle(.plain)
             }
 
-            // Selector rápido
+            TextField("¿En qué te vas a enfocar?", text: $coordinator.currentTaskInput)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+                .padding(6)
+                .background(Color.white.opacity(0.08))
+                .cornerRadius(6)
+
+            if coordinator.snapshot.completedBlocksInCycle > 0 {
+                Text("Siguiente: bloque \(coordinator.snapshot.currentBlockInCycle) de \(coordinator.snapshot.totalBlocksInCycle)")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+            }
+
             HStack {
                 Picker("Preajuste", selection: $coordinator.selectedPreset) {
                     ForEach(PomodoroPreset.allPresets) { preset in
-                        Text(preset.name).tag(preset)
+                        Text(preset.shortName).tag(preset)
                     }
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .tint(.orange)
+                .onChange(of: coordinator.selectedPreset) { _, preset in
+                    Task { await coordinator.selectPreset(preset) }
+                }
 
                 Spacer()
 
@@ -99,7 +114,7 @@ public struct ExpandedIslandView: View {
 
                         ForEach(1...coordinator.snapshot.totalBlocksInCycle, id: \.self) { idx in
                             Circle()
-                                .fill(idx <= coordinator.snapshot.currentBlockInCycle ? Color.orange : Color.white.opacity(0.2))
+                                .fill(blockDotColor(index: idx))
                                 .frame(width: 4, height: 4)
                         }
                     }
@@ -107,7 +122,7 @@ public struct ExpandedIslandView: View {
 
                 Spacer()
 
-                Text(formatSeconds(coordinator.snapshot.remainingSeconds))
+                Text(PomodoroTimeFormat.string(from: coordinator.snapshot.remainingSeconds))
                     .font(.system(size: 20, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundColor(.orange)
@@ -145,6 +160,7 @@ public struct ExpandedIslandView: View {
                         .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Anotar distracción")
 
                 Spacer()
 
@@ -159,6 +175,7 @@ public struct ExpandedIslandView: View {
                         .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Abrir ventana principal")
 
                 Button {
                     Task {
@@ -176,6 +193,7 @@ public struct ExpandedIslandView: View {
                         .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(coordinator.snapshot.isPaused ? "Reanudar" : "Pausar")
 
                 Button {
                     Task {
@@ -190,6 +208,7 @@ public struct ExpandedIslandView: View {
                         .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Cancelar sesión")
             }
         }
     }
@@ -213,7 +232,7 @@ public struct ExpandedIslandView: View {
 
                 Spacer()
 
-                Text(formatSeconds(coordinator.snapshot.remainingSeconds))
+                Text(PomodoroTimeFormat.string(from: coordinator.snapshot.remainingSeconds))
                     .font(.system(size: 20, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundColor(.mint)
@@ -270,7 +289,7 @@ public struct ExpandedIslandView: View {
 
                 Spacer()
 
-                Text(formatSeconds(coordinator.snapshot.remainingSeconds))
+                Text(PomodoroTimeFormat.string(from: coordinator.snapshot.remainingSeconds))
                     .font(.system(size: 20, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundColor(.cyan)
@@ -295,7 +314,7 @@ public struct ExpandedIslandView: View {
 
                 Button {
                     Task {
-                        await coordinator.startSession()
+                        await coordinator.startNextWorkBlock()
                     }
                 } label: {
                     Text("Nuevo Ciclo")
@@ -321,7 +340,7 @@ public struct ExpandedIslandView: View {
 
                 Spacer()
 
-                Text("+\(formatSeconds(coordinator.snapshot.overtimeSeconds))")
+                Text("+\(PomodoroTimeFormat.string(from: coordinator.snapshot.overtimeSeconds))")
                     .font(.system(size: 20, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundColor(.yellow)
@@ -329,7 +348,7 @@ public struct ExpandedIslandView: View {
 
             Button {
                 Task {
-                    await coordinator.skipBreak()
+                    await coordinator.takeBreak()
                 }
             } label: {
                 Text("Tomar Descanso Ahora")
@@ -344,10 +363,14 @@ public struct ExpandedIslandView: View {
         }
     }
 
-    private func formatSeconds(_ seconds: TimeInterval) -> String {
-        let total = Int(max(0, seconds))
-        let minutes = total / 60
-        let secs = total % 60
-        return String(format: "%02d:%02d", minutes, secs)
+    private func blockDotColor(index: Int) -> Color {
+        let snapshot = coordinator.snapshot
+        if index <= snapshot.completedBlocksInCycle {
+            return snapshot.phase.accentColor
+        }
+        if index == snapshot.currentBlockInCycle && (snapshot.phase == .work || snapshot.phase == .overtime) {
+            return snapshot.phase.accentColor.opacity(0.45)
+        }
+        return Color.white.opacity(0.2)
     }
 }
