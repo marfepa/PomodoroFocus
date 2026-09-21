@@ -180,6 +180,37 @@ final class PomodoroCoreEngineTests: XCTestCase {
         try? FileManager.default.removeItem(at: directory)
     }
 
+    func testExpiredWorkRestoresAsOvertimeOnce() async {
+        let engine = PomodoroCoreEngine()
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let checkpoint = EngineCheckpoint(
+            phase: .work,
+            presetID: PomodoroPreset.testFast.id,
+            taskTitle: "Cerrado",
+            currentBlockInCycle: 1,
+            completedBlocksInCycle: 0,
+            nextBlockInCycle: 1,
+            completedPomodorosToday: 0,
+            dayStamp: PomodoroDay.stamp(start),
+            isPaused: false,
+            pausedRemainingTime: 0,
+            duration: 10,
+            startTimestamp: start,
+            targetTimestamp: start.addingTimeInterval(10),
+            interruptions: []
+        )
+        let now = start.addingTimeInterval(30)
+        await engine.importCheckpoint(checkpoint, at: now)
+        let snap = await engine.getSnapshot(at: now)
+        XCTAssertEqual(snap.phase, .overtime)
+        XCTAssertEqual(snap.completedPomodorosToday, 1)
+        XCTAssertEqual(snap.completedBlocksInCycle, 1)
+
+        await engine.importCheckpoint(await engine.exportCheckpoint(at: now), at: now.addingTimeInterval(5))
+        let again = await engine.getSnapshot(at: now)
+        XCTAssertEqual(again.completedPomodorosToday, 1)
+    }
+
     func testIslandGeometryMatchesHitRect() {
         let metrics = DisplayNotchMetrics(
             frame: CGRect(x: 0, y: 0, width: 180, height: 32),
