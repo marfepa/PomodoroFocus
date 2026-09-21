@@ -60,40 +60,40 @@ public struct DynamicIslandSurface: View {
     // MARK: - Geometría Dinámica
     private var capsuleWidth: CGFloat {
         if coordinator.isExpanded {
-            return 390
+            return 410
         }
         if metrics.hasHardwareNotch {
-            return max(metrics.frame.width + 120, 240)
+            return max(metrics.frame.width + 280, 470)
         }
-        return 220
+        return 230
     }
 
     private var capsuleHeight: CGFloat {
         if coordinator.isExpanded {
             if coordinator.isQuickCapturePresented {
-                return 150
+                return 155
             }
             switch coordinator.snapshot.phase {
             case .idle:
-                return 170
+                return 180
             case .work:
-                return 155
-            case .shortBreak:
-                return 150
-            case .longBreak:
                 return 165
+            case .shortBreak:
+                return 155
+            case .longBreak:
+                return 170
             case .overtime:
-                return 140
+                return 145
             }
         }
-        return metrics.hasHardwareNotch ? max(metrics.frame.height + 4, 34) : 34
+        return metrics.hasHardwareNotch ? max(metrics.frame.height + 12, 44) : 38
     }
 
     private var cornerRadius: CGFloat {
         if coordinator.isExpanded {
-            return 22
+            return 24
         }
-        return metrics.hasHardwareNotch ? 10 : 17
+        return metrics.hasHardwareNotch ? 16 : 19
     }
 
     private var borderColor: Color {

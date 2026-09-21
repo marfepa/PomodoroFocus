@@ -61,14 +61,14 @@ public final class NotchWindowController: NSObject {
 
     private func isPointInsideCapsule(_ point: NSPoint) -> Bool {
         let isExpanded = isExpandedProvider?() ?? false
-        let capsuleWidth: CGFloat = isExpanded ? 400.0 : (currentMetrics.hasHardwareNotch ? max(currentMetrics.frame.width + 140, 260) : 240.0)
-        let capsuleHeight: CGFloat = isExpanded ? 190.0 : (currentMetrics.hasHardwareNotch ? max(currentMetrics.frame.height + 8, 38) : 38.0)
+        let capsuleWidth: CGFloat = isExpanded ? 440.0 : (currentMetrics.hasHardwareNotch ? max(currentMetrics.frame.width + 300, 480) : 260.0)
+        let capsuleHeight: CGFloat = isExpanded ? 210.0 : (currentMetrics.hasHardwareNotch ? max(currentMetrics.frame.height + 20, 56) : 48.0)
 
         let x = (maxPanelWidth - capsuleWidth) / 2.0
         let y = maxPanelHeight - capsuleHeight
 
         let capsuleRect = NSRect(x: x, y: y, width: capsuleWidth, height: capsuleHeight)
-        return capsuleRect.insetBy(dx: -4, dy: -4).contains(point)
+        return capsuleRect.insetBy(dx: -10, dy: -10).contains(point)
     }
 
     deinit {

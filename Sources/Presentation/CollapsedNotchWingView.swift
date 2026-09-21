@@ -11,15 +11,17 @@ public struct CollapsedNotchWingView: View {
     }
 
     public var body: some View {
-        HStack(spacing: hasHardwareNotch ? 170 : 12) {
+        HStack {
             // Ala Izquierda
             leftWingView
+
+            Spacer(minLength: hasHardwareNotch ? 195 : 16)
 
             // Ala Derecha
             rightWingView
         }
-        .padding(.horizontal, 16)
-        .frame(height: 32)
+        .padding(.horizontal, 18)
+        .frame(height: 40)
     }
 
     @ViewBuilder

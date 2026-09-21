@@ -9,11 +9,17 @@ public final class SessionCoordinator {
     // MARK: - Estado Observable para SwiftUI
     public var snapshot: PomodoroSnapshot
     public var isHovered: Bool = false
-    public var isExpanded: Bool = false
+    public var isExpanded: Bool = true
     public var isQuickCapturePresented: Bool = false
     public var quickCaptureText: String = ""
     public var selectedPreset: PomodoroPreset = .standard25
     public var currentTaskInput: String = ""
+
+    public func toggleIsland() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+            self.isExpanded.toggle()
+        }
+    }
 
     // Ajustes de Atajos de Concentración
     public var workShortcutName: String = "Activar Modo Enfoque"
@@ -209,6 +215,11 @@ public final class SessionCoordinator {
             // Comprobar ⌘ + I
             if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers?.lowercased() == "i" {
                 self.toggleQuickCapture()
+                return nil
+            }
+            // Comprobar ⌘ + O para alternar la isla
+            if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers?.lowercased() == "o" {
+                self.toggleIsland()
                 return nil
             }
             return event
