@@ -59,24 +59,82 @@ final class PomodoroCoreEngineTests: XCTestCase {
         XCTAssertEqual(snap.internalInterruptionsCount, 1)
         XCTAssertEqual(snap.phase, .work, "La regla de Cirillo exige que la interrupción interna no detenga la fase")
 
-        // Expirar bloque 1 de 2 -> debe transicionar a descanso corto
-        let phaseAfter1 = await engine.transitionOnExpiry()
-        XCTAssertEqual(phaseAfter1, .shortBreak)
-        snap = await engine.getSnapshot()
-        XCTAssertEqual(snap.currentBlockInCycle, 2)
+        // El trabajo vencido entra en flow y cuenta el pomodoro, sin saltar al descanso.
+        let expired = Date().addingTimeInterval(11)
+        let overtime = await engine.enterOvertime(at: expired)
+        XCTAssertEqual(overtime, .overtime)
+        snap = await engine.getSnapshot(at: expired)
+        XCTAssertEqual(snap.currentBlockInCycle, 1)
+        XCTAssertEqual(snap.completedBlocksInCycle, 1)
+        XCTAssertEqual(snap.completedPomodorosToday, 1)
+        XCTAssertGreaterThan(snap.overtimeSeconds, 0)
+
+        // Una segunda llamada no vuelve a contar el mismo bloque.
+        let stillOvertime = await engine.enterOvertime(at: expired.addingTimeInterval(5))
+        XCTAssertEqual(stillOvertime, .overtime)
+        snap = await engine.getSnapshot(at: expired)
         XCTAssertEqual(snap.completedPomodorosToday, 1)
 
-        // Expirar descanso corto -> reset to idle
-        let phaseAfterBreak = await engine.transitionOnExpiry()
-        XCTAssertEqual(phaseAfterBreak, .idle)
+        // Tomar descanso abre el corto y deja el bloque 2 preparado.
+        let breakPhase = await engine.beginBreak(at: expired)
+        XCTAssertEqual(breakPhase, .shortBreak)
+        snap = await engine.getSnapshot()
+        XCTAssertEqual(snap.completedBlocksInCycle, 1)
 
-        // Iniciar bloque 2 de 2
+        let phaseAfterBreak = await engine.transitionOnExpiry(at: Date().addingTimeInterval(20))
+        XCTAssertEqual(phaseAfterBreak, .idle)
+        snap = await engine.getSnapshot()
+        XCTAssertEqual(snap.currentBlockInCycle, 2)
+
+        // Bloque 2 de 2 cierra el ciclo con descanso largo.
         await engine.startWork(taskTitle: "Completar tarea")
-        // Expirar bloque 2 de 2 -> debe transicionar a descanso largo
-        let phaseAfter2 = await engine.transitionOnExpiry()
-        XCTAssertEqual(phaseAfter2, .longBreak)
+        let secondExpiry = Date().addingTimeInterval(11)
+        let secondOvertime = await engine.enterOvertime(at: secondExpiry)
+        XCTAssertEqual(secondOvertime, .overtime)
+        let longBreak = await engine.beginBreak(at: secondExpiry)
+        XCTAssertEqual(longBreak, .longBreak)
         snap = await engine.getSnapshot()
         XCTAssertEqual(snap.completedPomodorosToday, 2)
+        XCTAssertEqual(snap.phase, .longBreak)
+
+        let afterLongBreak = await engine.transitionOnExpiry(at: Date().addingTimeInterval(20))
+        XCTAssertEqual(afterLongBreak, .idle)
+        snap = await engine.getSnapshot()
+        XCTAssertEqual(snap.currentBlockInCycle, 1)
+        XCTAssertEqual(snap.completedBlocksInCycle, 0)
+    }
+
+    func testBeginBreakBeforeExpiryDoesNothing() async {
+        let engine = PomodoroCoreEngine(preset: .testFast)
+        await engine.startWork()
+        let phase = await engine.beginBreak(at: Date())
+        XCTAssertEqual(phase, .work)
+    }
+
+    func testCancelResetsCycleButKeepsInterruptions() async {
+        let engine = PomodoroCoreEngine(preset: .testFast)
+        await engine.startWork(taskTitle: "Borrador")
+        await engine.recordInterruption(type: .external, note: "Llamada")
+        await engine.resetToIdle()
+        let snap = await engine.getSnapshot()
+        XCTAssertEqual(snap.phase, .idle)
+        XCTAssertEqual(snap.currentBlockInCycle, 1)
+        XCTAssertNil(snap.currentTaskTitle)
+        XCTAssertEqual(snap.externalInterruptionsCount, 1)
+    }
+
+    func testDayRolloverClearsTodayCount() async {
+        let engine = PomodoroCoreEngine(preset: .testFast)
+        await engine.startWork()
+        let later = Date().addingTimeInterval(11)
+        _ = await engine.enterOvertime(at: later)
+        var checkpoint = await engine.exportCheckpoint(at: later)
+        XCTAssertEqual(checkpoint.completedPomodorosToday, 1)
+
+        checkpoint.dayStamp = "1999-01-01"
+        await engine.importCheckpoint(checkpoint, at: later)
+        let snap = await engine.getSnapshot(at: later)
+        XCTAssertEqual(snap.completedPomodorosToday, 0)
     }
 
     func testPauseAndResumeDeterminism() async {

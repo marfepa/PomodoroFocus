@@ -1,7 +1,7 @@
 import Foundation
 
 /// Tipo de interferencia según la metodología de Francesco Cirillo.
-public enum InterruptionType: String, CaseIterable, Sendable, Codable {
+public enum InterruptionType: String, CaseIterable, Sendable, Codable, Equatable {
     /// Estímulo intrínseco (deseo repentino de revisar el correo, navegar o consultar el móvil).
     /// Notación clásica: Apóstrofe (').
     case `internal`
@@ -30,7 +30,7 @@ public enum InterruptionType: String, CaseIterable, Sendable, Codable {
 }
 
 /// Registro individual de interrupción durante una sesión de trabajo.
-public struct InterruptionRecord: Identifiable, Sendable, Codable {
+public struct InterruptionRecord: Identifiable, Sendable, Codable, Equatable {
     public let id: UUID
     public let type: InterruptionType
     public let note: String

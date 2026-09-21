@@ -70,6 +70,7 @@ public final class SessionCoordinator {
             currentPreset: .standard25,
             currentTaskTitle: nil,
             currentBlockInCycle: 1,
+            completedBlocksInCycle: 0,
             totalBlocksInCycle: 4,
             remainingSeconds: 25 * 60,
             overtimeSeconds: 0,

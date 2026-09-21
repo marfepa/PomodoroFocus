@@ -66,4 +66,24 @@ public struct PomodoroPreset: Identifiable, Hashable, Sendable, Codable {
         .deep45,
         .flow50
     ]
+
+    public var shortName: String {
+        switch id {
+        case Self.standard25.id:
+            return "25 min"
+        case Self.deep45.id:
+            return "45 min"
+        case Self.flow50.id:
+            return "50 min"
+        default:
+            return name
+        }
+    }
+
+    public static func matching(id: String) -> PomodoroPreset? {
+        if id == testFast.id {
+            return testFast
+        }
+        return allPresets.first { $0.id == id }
+    }
 }
