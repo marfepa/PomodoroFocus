@@ -1,0 +1,499 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		06D722311F5DAC976F2E7F5A /* PomodoroPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3203C6C17E6FBD750D6C0C9 /* PomodoroPreset.swift */; };
+		1990E03083609EB11EBA7543 /* Interruption.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237E2BB88E92FA8938055286 /* Interruption.swift */; };
+		1B2E23CE182A39EF37400D97 /* DynamicNotchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE7DFE7F2AAD98BE4AF6EC48 /* DynamicNotchPanel.swift */; };
+		1FFF95ADC3DAD09B66159AB2 /* CollapsedNotchWingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B0A90EEE72245558739B421 /* CollapsedNotchWingView.swift */; };
+		27BA431BCF0200D560F19725 /* DynamicIslandSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DA7E4A3B45DE845C0B10EA6 /* DynamicIslandSurface.swift */; };
+		30E7A8DAF48EA609925F7AEC /* PomodoroStateCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD8CBE73136EC13BAF64E99 /* PomodoroStateCalculator.swift */; };
+		4BC5BDC7FBC7DA6AC686D444 /* PomodoroPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC01F39F4608E489CD527008 /* PomodoroPhase.swift */; };
+		55D64D7D25B4D1F927043921 /* SessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EC37F0B291F6FA904E0152B /* SessionCoordinator.swift */; };
+		5DDBF6B67849373D8734F154 /* PomodoroApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57AE167C7F4EE07C19F0A815 /* PomodoroApp.swift */; };
+		848B5CDECB49099967DE1BE9 /* PomodoroFocusFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B382191BA514DDF0B775E3A7 /* PomodoroFocusFilter.swift */; };
+		89D31F23C4FE33979E2DFE77 /* QuickInterruptionCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB945D70ED60F1C053176F92 /* QuickInterruptionCaptureView.swift */; };
+		A33E72A0AC566B9E3C4817BD /* SystemFocusController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5CC580B2820CE6CCAB13E36 /* SystemFocusController.swift */; };
+		B1EA73F0B039D4C8218E9AB7 /* PomodoroCoreEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C9FA777D5141978147827A9 /* PomodoroCoreEngine.swift */; };
+		CD95B7FCD12394F0D628B503 /* NotchWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8308A867358650FD80E1F778 /* NotchWindowController.swift */; };
+		CE3DE3B532C1F30F14ED7862 /* ExpandedIslandView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4214EFC48C79C812669AAC8F /* ExpandedIslandView.swift */; };
+		DDE5FDFB016C868D98ACD042 /* DisplayNotchMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 337D6873615E31F32C3D5C87 /* DisplayNotchMetrics.swift */; };
+		ED27D972EBA7383C50C7B16B /* PomodoroCoreEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07CF0C9983F3E731012743BC /* PomodoroCoreEngineTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		38F1339AA400FB8DB1F18977 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 696C6DDA24A5C4A402796F89 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7903707A219EEB0A29FD23BD;
+			remoteInfo = Pomodoro;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		07CF0C9983F3E731012743BC /* PomodoroCoreEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroCoreEngineTests.swift; sourceTree = "<group>"; };
+		0DA7E4A3B45DE845C0B10EA6 /* DynamicIslandSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicIslandSurface.swift; sourceTree = "<group>"; };
+		13AE08D9A779DE0DA2F45A23 /* PomodoroTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PomodoroTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		237E2BB88E92FA8938055286 /* Interruption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Interruption.swift; sourceTree = "<group>"; };
+		2C9FA777D5141978147827A9 /* PomodoroCoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroCoreEngine.swift; sourceTree = "<group>"; };
+		2EC37F0B291F6FA904E0152B /* SessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCoordinator.swift; sourceTree = "<group>"; };
+		337D6873615E31F32C3D5C87 /* DisplayNotchMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayNotchMetrics.swift; sourceTree = "<group>"; };
+		4214EFC48C79C812669AAC8F /* ExpandedIslandView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpandedIslandView.swift; sourceTree = "<group>"; };
+		57AE167C7F4EE07C19F0A815 /* PomodoroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroApp.swift; sourceTree = "<group>"; };
+		5B0A90EEE72245558739B421 /* CollapsedNotchWingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollapsedNotchWingView.swift; sourceTree = "<group>"; };
+		5BD8CBE73136EC13BAF64E99 /* PomodoroStateCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroStateCalculator.swift; sourceTree = "<group>"; };
+		63C3248B9FAB5C802C03D8BA /* Pomodoro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pomodoro.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7EE552E8C8F84473AA37EB5F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		8308A867358650FD80E1F778 /* NotchWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchWindowController.swift; sourceTree = "<group>"; };
+		A3203C6C17E6FBD750D6C0C9 /* PomodoroPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroPreset.swift; sourceTree = "<group>"; };
+		B382191BA514DDF0B775E3A7 /* PomodoroFocusFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroFocusFilter.swift; sourceTree = "<group>"; };
+		CB945D70ED60F1C053176F92 /* QuickInterruptionCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickInterruptionCaptureView.swift; sourceTree = "<group>"; };
+		EC01F39F4608E489CD527008 /* PomodoroPhase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroPhase.swift; sourceTree = "<group>"; };
+		F5CC580B2820CE6CCAB13E36 /* SystemFocusController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemFocusController.swift; sourceTree = "<group>"; };
+		FE7DFE7F2AAD98BE4AF6EC48 /* DynamicNotchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicNotchPanel.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2600B67F90F4B5A831BF3AFF /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				237E2BB88E92FA8938055286 /* Interruption.swift */,
+				2C9FA777D5141978147827A9 /* PomodoroCoreEngine.swift */,
+				EC01F39F4608E489CD527008 /* PomodoroPhase.swift */,
+				A3203C6C17E6FBD750D6C0C9 /* PomodoroPreset.swift */,
+				5BD8CBE73136EC13BAF64E99 /* PomodoroStateCalculator.swift */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		2E8674BBDE16B20B81905870 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				63C3248B9FAB5C802C03D8BA /* Pomodoro.app */,
+				13AE08D9A779DE0DA2F45A23 /* PomodoroTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7224001E175C4EE63B46324D = {
+			isa = PBXGroup;
+			children = (
+				E8CB277C7080674CCF4B2801 /* Sources */,
+				B938B63954F5255163F5E1B6 /* Tests */,
+				2E8674BBDE16B20B81905870 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		72D77633FF1EA28E18189EF2 /* Infrastructure */ = {
+			isa = PBXGroup;
+			children = (
+				337D6873615E31F32C3D5C87 /* DisplayNotchMetrics.swift */,
+				FE7DFE7F2AAD98BE4AF6EC48 /* DynamicNotchPanel.swift */,
+				8308A867358650FD80E1F778 /* NotchWindowController.swift */,
+				B382191BA514DDF0B775E3A7 /* PomodoroFocusFilter.swift */,
+				F5CC580B2820CE6CCAB13E36 /* SystemFocusController.swift */,
+			);
+			path = Infrastructure;
+			sourceTree = "<group>";
+		};
+		9009A69A0E867F1A7A8ED079 /* Coordination */ = {
+			isa = PBXGroup;
+			children = (
+				2EC37F0B291F6FA904E0152B /* SessionCoordinator.swift */,
+			);
+			path = Coordination;
+			sourceTree = "<group>";
+		};
+		A4B1CD73155F67657E5C4B2F /* App */ = {
+			isa = PBXGroup;
+			children = (
+				57AE167C7F4EE07C19F0A815 /* PomodoroApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		B63062CE48AD814F9445C404 /* Presentation */ = {
+			isa = PBXGroup;
+			children = (
+				5B0A90EEE72245558739B421 /* CollapsedNotchWingView.swift */,
+				0DA7E4A3B45DE845C0B10EA6 /* DynamicIslandSurface.swift */,
+				4214EFC48C79C812669AAC8F /* ExpandedIslandView.swift */,
+				CB945D70ED60F1C053176F92 /* QuickInterruptionCaptureView.swift */,
+			);
+			path = Presentation;
+			sourceTree = "<group>";
+		};
+		B938B63954F5255163F5E1B6 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				07CF0C9983F3E731012743BC /* PomodoroCoreEngineTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		E8CB277C7080674CCF4B2801 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				7EE552E8C8F84473AA37EB5F /* Info.plist */,
+				A4B1CD73155F67657E5C4B2F /* App */,
+				9009A69A0E867F1A7A8ED079 /* Coordination */,
+				2600B67F90F4B5A831BF3AFF /* Domain */,
+				72D77633FF1EA28E18189EF2 /* Infrastructure */,
+				B63062CE48AD814F9445C404 /* Presentation */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		7903707A219EEB0A29FD23BD /* Pomodoro */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E60CD5C7520207E12DB32B0 /* Build configuration list for PBXNativeTarget "Pomodoro" */;
+			buildPhases = (
+				BDF2DF9B9A082E540AD3F574 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Pomodoro;
+			packageProductDependencies = (
+			);
+			productName = Pomodoro;
+			productReference = 63C3248B9FAB5C802C03D8BA /* Pomodoro.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D067DB411932CA24884D3B13 /* PomodoroTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B84A069775F4B73BC7BF94CF /* Build configuration list for PBXNativeTarget "PomodoroTests" */;
+			buildPhases = (
+				4FB1D51383FB58AA940E321A /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D359B52E97AC4F25C03DAACD /* PBXTargetDependency */,
+			);
+			name = PomodoroTests;
+			packageProductDependencies = (
+			);
+			productName = PomodoroTests;
+			productReference = 13AE08D9A779DE0DA2F45A23 /* PomodoroTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		696C6DDA24A5C4A402796F89 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 3BA78823BED85E98FA1F9BA4 /* Build configuration list for PBXProject "Pomodoro" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 7224001E175C4EE63B46324D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 2E8674BBDE16B20B81905870 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				7903707A219EEB0A29FD23BD /* Pomodoro */,
+				D067DB411932CA24884D3B13 /* PomodoroTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4FB1D51383FB58AA940E321A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ED27D972EBA7383C50C7B16B /* PomodoroCoreEngineTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BDF2DF9B9A082E540AD3F574 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1FFF95ADC3DAD09B66159AB2 /* CollapsedNotchWingView.swift in Sources */,
+				DDE5FDFB016C868D98ACD042 /* DisplayNotchMetrics.swift in Sources */,
+				27BA431BCF0200D560F19725 /* DynamicIslandSurface.swift in Sources */,
+				1B2E23CE182A39EF37400D97 /* DynamicNotchPanel.swift in Sources */,
+				CE3DE3B532C1F30F14ED7862 /* ExpandedIslandView.swift in Sources */,
+				1990E03083609EB11EBA7543 /* Interruption.swift in Sources */,
+				CD95B7FCD12394F0D628B503 /* NotchWindowController.swift in Sources */,
+				5DDBF6B67849373D8734F154 /* PomodoroApp.swift in Sources */,
+				B1EA73F0B039D4C8218E9AB7 /* PomodoroCoreEngine.swift in Sources */,
+				848B5CDECB49099967DE1BE9 /* PomodoroFocusFilter.swift in Sources */,
+				4BC5BDC7FBC7DA6AC686D444 /* PomodoroPhase.swift in Sources */,
+				06D722311F5DAC976F2E7F5A /* PomodoroPreset.swift in Sources */,
+				30E7A8DAF48EA609925F7AEC /* PomodoroStateCalculator.swift in Sources */,
+				89D31F23C4FE33979E2DFE77 /* QuickInterruptionCaptureView.swift in Sources */,
+				55D64D7D25B4D1F927043921 /* SessionCoordinator.swift in Sources */,
+				A33E72A0AC566B9E3C4817BD /* SystemFocusController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D359B52E97AC4F25C03DAACD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7903707A219EEB0A29FD23BD /* Pomodoro */;
+			targetProxy = 38F1339AA400FB8DB1F18977 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2FF50AA0298C52DE2C07A5DD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		476E3910E9638717F55D4E21 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		512B3EE945CEE8DEC77C6F51 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"-framework AppKit",
+					"-framework SwiftUI",
+					"-framework AppIntents",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.antigravity.pomodoro;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+			};
+			name = Release;
+		};
+		AFB518EE27D80685F93EE959 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.antigravity.pomodorotests;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pomodoro.app/Contents/MacOS/Pomodoro";
+			};
+			name = Release;
+		};
+		CEBBBBB923CEF08235AC4782 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"-framework AppKit",
+					"-framework SwiftUI",
+					"-framework AppIntents",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.antigravity.pomodoro;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+			};
+			name = Debug;
+		};
+		FD08440BC9111BF80CAB4950 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.antigravity.pomodorotests;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pomodoro.app/Contents/MacOS/Pomodoro";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3BA78823BED85E98FA1F9BA4 /* Build configuration list for PBXProject "Pomodoro" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				476E3910E9638717F55D4E21 /* Debug */,
+				2FF50AA0298C52DE2C07A5DD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3E60CD5C7520207E12DB32B0 /* Build configuration list for PBXNativeTarget "Pomodoro" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CEBBBBB923CEF08235AC4782 /* Debug */,
+				512B3EE945CEE8DEC77C6F51 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B84A069775F4B73BC7BF94CF /* Build configuration list for PBXNativeTarget "PomodoroTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FD08440BC9111BF80CAB4950 /* Debug */,
+				AFB518EE27D80685F93EE959 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 696C6DDA24A5C4A402796F89 /* Project object */;
+}
