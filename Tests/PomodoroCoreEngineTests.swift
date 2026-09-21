@@ -137,6 +137,49 @@ final class PomodoroCoreEngineTests: XCTestCase {
         XCTAssertEqual(snap.completedPomodorosToday, 0)
     }
 
+    func testSessionStoreRoundTrip() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let store = SessionStore(fileURL: directory.appendingPathComponent("session.json"))
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let record = InterruptionRecord(
+            type: .internal,
+            note: "Revisar el correo",
+            timestamp: now,
+            phase: .work,
+            associatedTask: "Informe"
+        )
+        let checkpoint = EngineCheckpoint(
+            phase: .work,
+            presetID: PomodoroPreset.standard25.id,
+            taskTitle: "Informe",
+            currentBlockInCycle: 2,
+            completedBlocksInCycle: 1,
+            nextBlockInCycle: 3,
+            completedPomodorosToday: 1,
+            dayStamp: PomodoroDay.stamp(now),
+            isPaused: false,
+            pausedRemainingTime: 0,
+            duration: 25 * 60,
+            startTimestamp: now,
+            targetTimestamp: now.addingTimeInterval(25 * 60),
+            interruptions: [record]
+        )
+        let settings = PersistedSettings(
+            presetID: PomodoroPreset.deep45.id,
+            workShortcutName: "Trabajo",
+            defaultShortcutName: "Descanso",
+            enableFocusAutomation: false,
+            shouldMinimizeOnStart: false
+        )
+        store.save(PersistedSession(settings: settings, checkpoint: checkpoint))
+        let loaded = try XCTUnwrap(store.load())
+        XCTAssertEqual(loaded.settings, settings)
+        XCTAssertEqual(loaded.checkpoint.taskTitle, "Informe")
+        XCTAssertEqual(loaded.checkpoint.interruptions.first?.note, "Revisar el correo")
+
+        try? FileManager.default.removeItem(at: directory)
+    }
+
     func testPauseAndResumeDeterminism() async {
         let engine = PomodoroCoreEngine(preset: .standard25)
         let now = Date()
