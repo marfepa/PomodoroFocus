@@ -34,6 +34,7 @@ public final class SessionCoordinator {
     // MARK: - Dependencias
     public let engine: PomodoroCoreEngine
     private let focusController: SystemFocusController
+    public let notificationService: NotificationServiceProtocol
     private var tickerTimer: Timer?
     private var hoverTask: Task<Void, Never>?
     private var localKeyMonitor: Any?
@@ -57,9 +58,13 @@ public final class SessionCoordinator {
         }
     }
 
-    public init(engine: PomodoroCoreEngine = PomodoroCoreEngine()) {
+    public init(
+        engine: PomodoroCoreEngine = PomodoroCoreEngine(),
+        notificationService: NotificationServiceProtocol = NotificationService.shared
+    ) {
         self.engine = engine
         self.focusController = SystemFocusController()
+        self.notificationService = notificationService
         self.snapshot = PomodoroSnapshot(
             phase: .idle,
             currentPreset: .standard25,
@@ -78,6 +83,7 @@ public final class SessionCoordinator {
         setupTicker()
         setupKeyboardMonitoring()
         setupNotificationObservers()
+        setupNotificationActions()
     }
 
     isolated deinit {
@@ -111,6 +117,13 @@ public final class SessionCoordinator {
             // Transición automática según secuencia canónica
             let newPhase = await engine.transitionOnExpiry(at: now)
             self.snapshot = await engine.getSnapshot(at: now)
+
+            // Programar notificación para la nueva fase
+            notificationService.schedulePhaseCompletion(
+                phase: newPhase,
+                taskTitle: snapshot.currentTaskTitle,
+                duration: snapshot.remainingSeconds
+            )
 
             // Gobernanza de Modos de Concentración
             await handleFocusModeTransition(from: oldPhase, to: newPhase)
@@ -147,6 +160,12 @@ public final class SessionCoordinator {
         await engine.startWork(taskTitle: taskName.isEmpty ? nil : taskName, preset: selectedPreset)
         snapshot = await engine.getSnapshot()
         
+        notificationService.schedulePhaseCompletion(
+            phase: .work,
+            taskTitle: snapshot.currentTaskTitle,
+            duration: snapshot.remainingSeconds
+        )
+
         windowController?.show()
 
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -160,17 +179,24 @@ public final class SessionCoordinator {
     public func pauseSession() async {
         await engine.pause()
         snapshot = await engine.getSnapshot()
+        notificationService.cancelPendingPhaseNotification()
     }
 
     public func resumeSession() async {
         await engine.resume()
         snapshot = await engine.getSnapshot()
+        notificationService.schedulePhaseCompletion(
+            phase: snapshot.phase,
+            taskTitle: snapshot.currentTaskTitle,
+            duration: snapshot.remainingSeconds
+        )
     }
 
     public func cancelSession() async {
         let previousPhase = snapshot.phase
         await engine.resetToIdle()
         snapshot = await engine.getSnapshot()
+        notificationService.cancelPendingPhaseNotification()
         
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
             isExpanded = false
@@ -188,6 +214,12 @@ public final class SessionCoordinator {
         await engine.skipToWork()
         snapshot = await engine.getSnapshot()
         
+        notificationService.schedulePhaseCompletion(
+            phase: .work,
+            taskTitle: snapshot.currentTaskTitle,
+            duration: snapshot.remainingSeconds
+        )
+
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
             isExpanded = false
         }
@@ -198,6 +230,11 @@ public final class SessionCoordinator {
     public func addTwoMinutes() async {
         await engine.addExtraTime(2 * 60)
         snapshot = await engine.getSnapshot()
+        notificationService.schedulePhaseCompletion(
+            phase: snapshot.phase,
+            taskTitle: snapshot.currentTaskTitle,
+            duration: snapshot.remainingSeconds
+        )
     }
 
     // MARK: - Captura Rápida de Interrupciones (⌘ + I)
@@ -286,4 +323,33 @@ public final class SessionCoordinator {
             try? await focusController.execute(.restoreDefaultProfile(shortcutName: defaultShortcutName))
         }
     }
+
+    // MARK: - Gestión de Acciones de Notificación (Apple Watch y Mac)
+    private func setupNotificationActions() {
+        if let service = notificationService as? NotificationService {
+            service.onActionReceived = { [weak self] action in
+                guard let self else { return }
+                Task { @MainActor in
+                    switch action {
+                    case .startBreak:
+                        let currentPhase = self.snapshot.phase
+                        if currentPhase == .work {
+                            _ = await self.engine.transitionOnExpiry()
+                            self.snapshot = await self.engine.getSnapshot()
+                            self.notificationService.schedulePhaseCompletion(
+                                phase: self.snapshot.phase,
+                                taskTitle: self.snapshot.currentTaskTitle,
+                                duration: self.snapshot.remainingSeconds
+                            )
+                        }
+                    case .startWork:
+                        await self.skipBreak()
+                    case .extendTwoMinutes:
+                        await self.addTwoMinutes()
+                    }
+                }
+            }
+        }
+    }
 }
+
