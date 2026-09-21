@@ -2,18 +2,77 @@ import SwiftUI
 import AppKit
 
 @main
+struct PomodoroApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @State private var coordinator = SessionCoordinator()
+
+    var body: some Scene {
+        Window("Pomodoro", id: "main") {
+            MainWindowView(coordinator: coordinator)
+                .background(WindowAccessor { window in
+                    coordinator.mainWindow = window
+                    appDelegate.setup(coordinator: coordinator)
+                })
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+        .commands {
+            CommandGroup(replacing: .newItem) {}
+            CommandMenu("Pomodoro") {
+                Button("🎯 Alternar Dynamic Island") {
+                    coordinator.toggleIsland()
+                }
+                .keyboardShortcut("o", modifiers: .command)
+
+                Button("📝 Anotar distracción") {
+                    coordinator.presentQuickCapture()
+                }
+                .keyboardShortcut("i", modifiers: .command)
+
+                Button("🖥️ Mostrar Ventana Principal") {
+                    coordinator.showMainWindow()
+                }
+                .keyboardShortcut("0", modifiers: .command)
+            }
+        }
+    }
+}
+
+/// Helper para capturar la referencia NSWindow de la ventana principal de SwiftUI.
+struct WindowAccessor: NSViewRepresentable {
+    let callback: (NSWindow?) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            self.callback(view.window)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            self.callback(nsView.window)
+        }
+    }
+}
+
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowController: NotchWindowController?
-    private var coordinator: SessionCoordinator?
+    private weak var coordinator: SessionCoordinator?
     private var statusItem: NSStatusItem?
+    private var statusMenu: NSMenu?
+    private var isConfigured: Bool = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Desactivar activación intrusiva en el Dock si se desea comportamiento accesorio
-        NSApp.setActivationPolicy(.accessory)
+        NSApp.setActivationPolicy(.regular)
+    }
 
-        let coordinator = SessionCoordinator()
+    func setup(coordinator: SessionCoordinator) {
+        guard !isConfigured else { return }
         self.coordinator = coordinator
+        self.isConfigured = true
 
         let screen = NSScreen.main ?? NSScreen.screens.first!
         let metrics = DisplayNotchMetrics.resolve(for: screen)
@@ -24,16 +83,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             coordinator?.isExpanded ?? false
         }
         self.windowController = windowController
-
         coordinator.panel = windowController.panel
 
-        // Configurar menú auxiliar en la barra de menús
         setupStatusItem()
-
         windowController.show()
     }
-
-    private var statusMenu: NSMenu?
 
     private func setupStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -45,9 +99,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Pomodoro Dynamic Island", action: nil, keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Pomodoro macOS", action: nil, keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "🎯 Alternar Isla (⌘O)", action: #selector(toggleIslandAction), keyEquivalent: "o"))
+        menu.addItem(NSMenuItem(title: "🖥️ Abrir Ventana Principal", action: #selector(openMainWindowAction), keyEquivalent: "0"))
+        menu.addItem(NSMenuItem(title: "🎯 Alternar Dynamic Island (⌘O)", action: #selector(toggleIslandAction), keyEquivalent: "o"))
         menu.addItem(NSMenuItem(title: "📝 Anotar distracción (⌘I)", action: #selector(triggerQuickCapture), keyEquivalent: "i"))
         menu.addItem(NSMenuItem(title: "⚙️ Centrar en pantalla", action: #selector(repositionIsland), keyEquivalent: "r"))
         menu.addItem(NSMenuItem.separator())
@@ -66,8 +121,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 statusItem?.menu = nil
             }
         } else {
-            toggleIslandAction()
+            // Clic izquierdo: si la ventana principal está minimizada u oculta, traerla al frente; si no, alternar la isla
+            if let window = coordinator?.mainWindow, window.isMiniaturized || !window.isVisible {
+                coordinator?.showMainWindow()
+            } else {
+                toggleIslandAction()
+            }
         }
+    }
+
+    @objc private func openMainWindowAction() {
+        coordinator?.showMainWindow()
     }
 
     @objc private func toggleIslandAction() {
@@ -87,5 +151,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func terminateApp() {
         NSApp.terminate(nil)
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        coordinator?.showMainWindow()
+        return true
     }
 }

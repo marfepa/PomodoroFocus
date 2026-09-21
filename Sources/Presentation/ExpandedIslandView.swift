@@ -135,7 +135,17 @@ public struct ExpandedIslandView: View {
                 }
                 .buttonStyle(.plain)
 
-                Spacer()
+                Button {
+                    coordinator.showMainWindow()
+                } label: {
+                    Image(systemName: "macwindow")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .padding(6)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
 
                 Button {
                     Task {

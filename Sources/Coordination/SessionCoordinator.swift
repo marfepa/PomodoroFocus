@@ -34,6 +34,22 @@ public final class SessionCoordinator {
     private var localKeyMonitor: Any?
 
     public weak var panel: DynamicNotchPanel?
+    public weak var mainWindow: NSWindow?
+    public var shouldMinimizeOnStart: Bool = true
+
+    public func showMainWindow() {
+        if let window = mainWindow {
+            window.deminiaturize(nil)
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
+    public func hideMainWindow() {
+        if shouldMinimizeOnStart, let window = mainWindow {
+            window.miniaturize(nil)
+        }
+    }
 
     public init(engine: PomodoroCoreEngine = PomodoroCoreEngine()) {
         self.engine = engine
@@ -129,6 +145,7 @@ public final class SessionCoordinator {
         }
 
         await handleFocusModeTransition(from: .idle, to: .work)
+        hideMainWindow()
     }
 
     public func pauseSession() async {
@@ -232,7 +249,9 @@ public final class SessionCoordinator {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.dismissQuickCapture()
+            MainActor.assumeIsolated {
+                self?.dismissQuickCapture()
+            }
         }
     }
 
