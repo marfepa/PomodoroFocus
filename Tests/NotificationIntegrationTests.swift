@@ -23,7 +23,11 @@ final class NotificationIntegrationTests: XCTestCase {
     func testNotificationLifecycleWithSessionCoordinator() async {
         let mockService = MockNotificationService()
         let engine = PomodoroCoreEngine(preset: .testFast)
-        let coordinator = SessionCoordinator(engine: engine, notificationService: mockService)
+        let coordinator = SessionCoordinator(
+            engine: engine,
+            notificationService: mockService,
+            store: .ephemeral
+        )
 
         // 1. Iniciar sesión -> debe programar notificación de trabajo
         coordinator.currentTaskInput = "Feature de Watch"
