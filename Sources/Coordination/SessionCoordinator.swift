@@ -9,13 +9,18 @@ public final class SessionCoordinator {
     // MARK: - Estado Observable para SwiftUI
     public var snapshot: PomodoroSnapshot
     public var isHovered: Bool = false
-    public var isExpanded: Bool = true
+    public var isExpanded: Bool = false
     public var isQuickCapturePresented: Bool = false
     public var quickCaptureText: String = ""
     public var selectedPreset: PomodoroPreset = .standard25
     public var currentTaskInput: String = ""
 
+    public var isIslandActive: Bool {
+        snapshot.phase != .idle || isQuickCapturePresented
+    }
+
     public func toggleIsland() {
+        guard isIslandActive else { return }
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
             self.isExpanded.toggle()
         }
@@ -34,6 +39,7 @@ public final class SessionCoordinator {
     private var localKeyMonitor: Any?
 
     public weak var panel: DynamicNotchPanel?
+    public weak var windowController: NotchWindowController?
     public weak var mainWindow: NSWindow?
     public var shouldMinimizeOnStart: Bool = true
 
@@ -115,13 +121,14 @@ public final class SessionCoordinator {
 
     // MARK: - Control de Hover con Debounce (120 ms)
     public func handleHoverChange(isInside: Bool) {
+        guard isIslandActive else { return }
         hoverTask?.cancel()
         self.isHovered = isInside
 
         if isInside {
             hoverTask = Task { @MainActor in
                 try? await Task.sleep(nanoseconds: 120_000_000) // 120 ms
-                if !Task.isCancelled && self.isHovered {
+                if !Task.isCancelled && self.isHovered && self.isIslandActive {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                         self.isExpanded = true
                     }
@@ -140,6 +147,8 @@ public final class SessionCoordinator {
         await engine.startWork(taskTitle: taskName.isEmpty ? nil : taskName, preset: selectedPreset)
         snapshot = await engine.getSnapshot()
         
+        windowController?.show()
+
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
             isExpanded = false
         }
@@ -165,6 +174,10 @@ public final class SessionCoordinator {
         
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
             isExpanded = false
+        }
+
+        if !isQuickCapturePresented {
+            windowController?.hide()
         }
 
         await handleFocusModeTransition(from: previousPhase, to: .idle)
@@ -199,6 +212,7 @@ public final class SessionCoordinator {
     public func presentQuickCapture() {
         isQuickCapturePresented = true
         quickCaptureText = ""
+        windowController?.show()
         panel?.allowsKeyInput = true
         panel?.makeKey()
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -221,7 +235,10 @@ public final class SessionCoordinator {
         panel?.allowsKeyInput = false
         panel?.resignKey()
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            isExpanded = isHovered
+            isExpanded = isHovered && isIslandActive
+        }
+        if !isIslandActive {
+            windowController?.hide()
         }
     }
 

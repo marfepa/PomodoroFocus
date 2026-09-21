@@ -14,56 +14,65 @@ public struct DynamicIslandSurface: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            // Contenedor orgánico de la cápsula
-            ZStack(alignment: .top) {
-                // Fondo oscuro continuo tipo Dynamic Island
-                RoundedRectangle(
-                    cornerRadius: cornerRadius,
-                    style: .continuous
-                )
-                .fill(Color.black)
-                .overlay(
+            if coordinator.isIslandActive {
+                // Contenedor orgánico de la cápsula
+                ZStack(alignment: .top) {
+                    // Fondo oscuro continuo tipo Dynamic Island
                     RoundedRectangle(
                         cornerRadius: cornerRadius,
                         style: .continuous
                     )
-                    .stroke(borderColor, lineWidth: coordinator.snapshot.overtimeSeconds > 0 ? 1.5 : 0.6)
-                )
-                .shadow(color: shadowColor, radius: coordinator.isExpanded ? 16 : 4, y: coordinator.isExpanded ? 8 : 2)
-
-                // Contenido interno conmutado
-                Group {
-                    if coordinator.isExpanded {
-                        ExpandedIslandView(coordinator: coordinator)
-                            .transition(.opacity.combined(with: .scale(scale: 0.96)))
-                    } else {
-                        CollapsedNotchWingView(
-                            snapshot: coordinator.snapshot,
-                            hasHardwareNotch: metrics.hasHardwareNotch
+                    .fill(Color.black)
+                    .overlay(
+                        RoundedRectangle(
+                            cornerRadius: cornerRadius,
+                            style: .continuous
                         )
-                        .transition(.opacity)
+                        .stroke(borderColor, lineWidth: coordinator.snapshot.overtimeSeconds > 0 ? 1.5 : 0.6)
+                    )
+                    .shadow(color: shadowColor, radius: coordinator.isExpanded ? 16 : 4, y: coordinator.isExpanded ? 8 : 2)
+
+                    // Contenido interno conmutado
+                    Group {
+                        if coordinator.isExpanded {
+                            ExpandedIslandView(coordinator: coordinator)
+                                .transition(.asymmetric(
+                                    insertion: .opacity.combined(with: .scale(scale: 0.94)),
+                                    removal: .opacity
+                                ))
+                        } else {
+                            CollapsedNotchWingView(
+                                snapshot: coordinator.snapshot,
+                                hasHardwareNotch: metrics.hasHardwareNotch
+                            )
+                            .transition(.opacity)
+                        }
                     }
                 }
+                .frame(width: capsuleWidth, height: capsuleHeight)
+                .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .onHover { isInside in
+                    coordinator.handleHoverChange(isInside: isInside)
+                }
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.85).combined(with: .opacity),
+                    removal: .scale(scale: 0.85).combined(with: .opacity)
+                ))
             }
-            .frame(width: capsuleWidth, height: capsuleHeight)
-            .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .onHover { isInside in
-                coordinator.handleHoverChange(isInside: isInside)
-            }
-            .animation(.spring(response: 0.35, dampingFraction: 0.75), value: coordinator.isExpanded)
-
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .animation(.spring(response: 0.36, dampingFraction: 0.72), value: coordinator.isExpanded)
+        .animation(.spring(response: 0.36, dampingFraction: 0.72), value: coordinator.isIslandActive)
     }
 
     // MARK: - Geometría Dinámica
     private var capsuleWidth: CGFloat {
         if coordinator.isExpanded {
-            return 410
+            return 350
         }
         if metrics.hasHardwareNotch {
-            return max(metrics.frame.width + 280, 470)
+            return max(metrics.frame.width + 250, 440)
         }
         return 230
     }
@@ -71,29 +80,29 @@ public struct DynamicIslandSurface: View {
     private var capsuleHeight: CGFloat {
         if coordinator.isExpanded {
             if coordinator.isQuickCapturePresented {
-                return 155
+                return 130
             }
             switch coordinator.snapshot.phase {
             case .idle:
-                return 180
+                return 120
             case .work:
-                return 165
+                return 118
             case .shortBreak:
-                return 155
+                return 115
             case .longBreak:
-                return 170
+                return 125
             case .overtime:
-                return 145
+                return 115
             }
         }
-        return metrics.hasHardwareNotch ? max(metrics.frame.height + 12, 44) : 38
+        return metrics.hasHardwareNotch ? max(metrics.frame.height + 4, 36) : 34
     }
 
     private var cornerRadius: CGFloat {
         if coordinator.isExpanded {
-            return 24
+            return 22
         }
-        return metrics.hasHardwareNotch ? 16 : 19
+        return metrics.hasHardwareNotch ? 16 : 17
     }
 
     private var borderColor: Color {
