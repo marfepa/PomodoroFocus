@@ -21,6 +21,8 @@ public let kPomodoroTimerNotificationIdentifier = "com.antigravity.pomodoro.time
 public protocol NotificationServiceProtocol: AnyObject, Sendable {
     func requestAuthorization() async -> Bool
     func schedulePhaseCompletion(phase: PomodoroPhase, taskTitle: String?, duration: TimeInterval)
+    /// Recordatorio de cierre durante el overtime: el bloque ya venció y no hay cuenta atrás que alargar.
+    func scheduleOvertimeReminder(taskTitle: String?, after delay: TimeInterval)
     func cancelPendingPhaseNotification()
 }
 
@@ -77,9 +79,10 @@ public final class NotificationService: NSObject, NotificationServiceProtocol, U
             options: [.customDismissAction]
         )
 
+        // Sin «+2 minutos»: cuando llega el aviso, el descanso ya ha terminado y no hay nada que alargar.
         let breakCategory = UNNotificationCategory(
             identifier: NotificationCategoryIdentifier.breakEnded.rawValue,
-            actions: [startWorkAction, extendTwoMinutesAction],
+            actions: [startWorkAction],
             intentIdentifiers: [],
             options: [.customDismissAction]
         )
@@ -118,19 +121,41 @@ public final class NotificationService: NSObject, NotificationServiceProtocol, U
             return
         }
 
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: duration, repeats: false)
+        enqueue(content, after: duration)
+    }
+
+    public func scheduleOvertimeReminder(taskTitle: String?, after delay: TimeInterval) {
+        cancelPendingPhaseNotification()
+        guard delay > 0 else { return }
+
+        let content = UNMutableNotificationContent()
+        content.sound = .default
+        content.title = "¿Cerramos el bloque? 🍅"
+        if let task = taskTitle, !task.isEmpty {
+            content.body = "Sigues en flow con \"\(task)\". Es buen momento para descansar."
+        } else {
+            content.body = "Sigues en flow. Es buen momento para descansar."
+        }
+        content.categoryIdentifier = NotificationCategoryIdentifier.workEnded.rawValue
+        content.userInfo = [Self.overtimeReminderKey: true]
+        enqueue(content, after: delay)
+    }
+
+    private static let overtimeReminderKey = "overtimeReminder"
+
+    /// Cancela notificaciones pendientes cuando se cancela o pausa la sesión.
+    public func cancelPendingPhaseNotification() {
+        center.removePendingNotificationRequests(withIdentifiers: [kPomodoroTimerNotificationIdentifier])
+    }
+
+    private func enqueue(_ content: UNMutableNotificationContent, after delay: TimeInterval) {
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
         let request = UNNotificationRequest(
             identifier: kPomodoroTimerNotificationIdentifier,
             content: content,
             trigger: trigger
         )
-
         center.add(request) { _ in }
-    }
-
-    /// Cancela notificaciones pendientes cuando se cancela o pausa la sesión.
-    public func cancelPendingPhaseNotification() {
-        center.removePendingNotificationRequests(withIdentifiers: [kPomodoroTimerNotificationIdentifier])
     }
 
     // MARK: - UNUserNotificationCenterDelegate
@@ -139,8 +164,9 @@ public final class NotificationService: NSObject, NotificationServiceProtocol, U
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        // Mostrar alerta y reproducir sonido incluso con la app en primer plano
-        completionHandler([.banner, .sound, .list])
+        // Los fines de fase no suenan aquí: el coordinador ya reproduce su sonido en la transición.
+        let isReminder = notification.request.content.userInfo[Self.overtimeReminderKey] as? Bool == true
+        completionHandler(isReminder ? [.banner, .sound, .list] : [.banner, .list])
     }
 
     public func userNotificationCenter(

@@ -365,12 +365,13 @@ public struct ExpandedIslandView: View {
 
     private func blockDotColor(index: Int) -> Color {
         let snapshot = coordinator.snapshot
-        if index <= snapshot.completedBlocksInCycle {
-            return snapshot.phase.accentColor
-        }
-        if index == snapshot.currentBlockInCycle && (snapshot.phase == .work || snapshot.phase == .overtime) {
+        switch snapshot.blockState(at: index) {
+        case .completed:
+            return PomodoroPhase.work.accentColor
+        case .current:
             return snapshot.phase.accentColor.opacity(0.45)
+        case .pending:
+            return Color.white.opacity(0.2)
         }
-        return Color.white.opacity(0.2)
     }
 }

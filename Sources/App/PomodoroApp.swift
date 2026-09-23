@@ -63,6 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private weak var coordinator: SessionCoordinator?
     private var statusItem: NSStatusItem?
     private var statusMenu: NSMenu?
+    private var statusPhase: PomodoroPhase?
     private var isConfigured: Bool = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -134,7 +135,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let time = snapshot.phase == .overtime
             ? "+\(PomodoroTimeFormat.string(from: snapshot.overtimeSeconds))"
             : PomodoroTimeFormat.string(from: snapshot.remainingSeconds)
-        button.title = " \(time)"
+        let title = " \(time)"
+        if button.title != title {
+            button.title = title
+        }
+        guard statusPhase != snapshot.phase else { return }
+        statusPhase = snapshot.phase
         button.image = NSImage(systemSymbolName: snapshot.phase.systemImageName, accessibilityDescription: snapshot.phase.title)
         button.contentTintColor = statusTint(for: snapshot.phase)
     }

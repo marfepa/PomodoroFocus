@@ -131,7 +131,7 @@ public struct MainWindowView: View {
                         style: StrokeStyle(lineWidth: 14, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
-                    .animation(.linear(duration: 0.25), value: coordinator.snapshot.progress)
+                    .animation(.linear(duration: 1), value: coordinator.snapshot.progress)
 
                 VStack(spacing: 6) {
                     if coordinator.snapshot.phase == .overtime || coordinator.snapshot.overtimeSeconds > 0 {
@@ -213,25 +213,27 @@ public struct MainWindowView: View {
                     }
                     .buttonStyle(.plain)
                 } else {
-                    // Controles durante sesión activa
-                    Button {
-                        Task {
-                            if coordinator.snapshot.isPaused {
-                                await coordinator.resumeSession()
-                            } else {
-                                await coordinator.pauseSession()
+                    // Controles durante sesión activa (el overtime no se pausa)
+                    if coordinator.snapshot.phase != .overtime {
+                        Button {
+                            Task {
+                                if coordinator.snapshot.isPaused {
+                                    await coordinator.resumeSession()
+                                } else {
+                                    await coordinator.pauseSession()
+                                }
                             }
+                        } label: {
+                            Label(coordinator.snapshot.isPaused ? "Reanudar" : "Pausar", systemImage: coordinator.snapshot.isPaused ? "play.fill" : "pause.fill")
+                                .font(.system(size: 13, weight: .bold))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(Color.secondary.opacity(0.15))
+                                .foregroundColor(.primary)
+                                .cornerRadius(8)
                         }
-                    } label: {
-                        Label(coordinator.snapshot.isPaused ? "Reanudar" : "Pausar", systemImage: coordinator.snapshot.isPaused ? "play.fill" : "pause.fill")
-                            .font(.system(size: 13, weight: .bold))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(Color.secondary.opacity(0.15))
-                            .foregroundColor(.primary)
-                            .cornerRadius(8)
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
 
                     if coordinator.snapshot.phase == .overtime {
                         Button {
@@ -315,7 +317,7 @@ public struct MainWindowView: View {
                             .frame(height: 24)
                         Text("\(idx)")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(idx <= coordinator.snapshot.completedBlocksInCycle ? .black : .secondary)
+                            .foregroundColor(coordinator.snapshot.blockState(at: idx) == .completed ? .black : .secondary)
                     }
                 }
             }
@@ -485,13 +487,14 @@ public struct MainWindowView: View {
 
     private func blockFill(index: Int) -> Color {
         let snapshot = coordinator.snapshot
-        if index <= snapshot.completedBlocksInCycle {
-            return Color.orange
+        switch snapshot.blockState(at: index) {
+        case .completed:
+            return PomodoroPhase.work.accentColor
+        case .current:
+            return snapshot.phase.accentColor.opacity(0.45)
+        case .pending:
+            return Color.secondary.opacity(0.15)
         }
-        if index == snapshot.currentBlockInCycle && (snapshot.phase == .work || snapshot.phase == .overtime) {
-            return Color.orange.opacity(0.45)
-        }
-        return Color.secondary.opacity(0.15)
     }
 
     private func submitNote() {
