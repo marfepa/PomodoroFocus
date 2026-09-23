@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// Representa las fases temporales del ciclo Pomodoro.
 public enum PomodoroPhase: String, CaseIterable, Sendable, Codable, Equatable {
@@ -19,7 +20,7 @@ public enum PomodoroPhase: String, CaseIterable, Sendable, Codable, Equatable {
         case .longBreak:
             return "Descanso Largo"
         case .overtime:
-            return "Tiempo Excedido"
+            return "En flow"
         }
     }
 
@@ -34,23 +35,37 @@ public enum PomodoroPhase: String, CaseIterable, Sendable, Codable, Equatable {
         case .longBreak:
             return "figure.walk"
         case .overtime:
-            return "exclamationmark.triangle.fill"
+            return "flame.fill"
+        }
+    }
+
+    public var nsAccentColor: NSColor {
+        switch self {
+        case .idle:
+            return .secondaryLabelColor
+        case .work:
+            return .systemOrange
+        case .shortBreak:
+            return .systemMint
+        case .longBreak:
+            return .systemCyan
+        case .overtime:
+            return .systemYellow
         }
     }
 
     public var accentColor: Color {
-        switch self {
-        case .idle:
-            return Color(nsColor: .secondaryLabelColor)
-        case .work:
-            return Color.orange
-        case .shortBreak:
-            return Color.mint
-        case .longBreak:
-            return Color.cyan
-        case .overtime:
-            return Color.yellow
-        }
+        Color(nsColor: nsAccentColor)
+    }
+
+    /// Acento para texto sobre fondos claros: el amarillo y el menta puros no se leen en modo claro.
+    public var legibleAccentColor: Color {
+        let phase = self
+        return Color(nsColor: NSColor(name: nil) { appearance in
+            let base = phase.nsAccentColor
+            guard appearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua else { return base }
+            return base.blended(withFraction: 0.35, of: .black) ?? base
+        })
     }
 
     public var ergonomicAdvice: String? {

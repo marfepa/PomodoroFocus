@@ -56,14 +56,11 @@ public struct QuickInterruptionCaptureView: View {
                     }
                 } label: {
                     Text("Anotar")
-                        .font(.system(size: 11, weight: .bold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(Color.orange)
-                        .foregroundColor(.black)
-                        .cornerRadius(6)
+                        .padding(.horizontal, 2)
+                        .padding(.vertical, 2)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pomodoro(.primary(.orange)))
+                .disabled(coordinator.quickCaptureText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
 
             Text("Queda en el diario de hoy sin detener el cronómetro.")

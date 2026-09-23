@@ -3,9 +3,11 @@ import SwiftUI
 /// Vista detallada desplegada al posar el cursor (hover) o al abrir la captura rápida.
 public struct ExpandedIslandView: View {
     @Bindable public var coordinator: SessionCoordinator
+    private let namespace: Namespace.ID
 
-    public init(coordinator: SessionCoordinator) {
+    public init(coordinator: SessionCoordinator, namespace: Namespace.ID) {
         self.coordinator = coordinator
+        self.namespace = namespace
     }
 
     public var body: some View {
@@ -29,7 +31,7 @@ public struct ExpandedIslandView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .frame(width: 330)
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Contenido: Estado Inactivo
@@ -40,22 +42,14 @@ public struct ExpandedIslandView: View {
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.orange)
                 Spacer()
-                Button {
-                    coordinator.showMainWindow()
-                } label: {
-                    Image(systemName: "macwindow")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
+                mainWindowButton
             }
 
             TextField("¿En qué te vas a enfocar?", text: $coordinator.currentTaskInput)
                 .textFieldStyle(.plain)
                 .font(.system(size: 12))
                 .padding(6)
-                .background(Color.white.opacity(0.08))
-                .cornerRadius(6)
+                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
 
             if coordinator.snapshot.completedBlocksInCycle > 0 {
                 Text("Siguiente: bloque \(coordinator.snapshot.currentBlockInCycle) de \(coordinator.snapshot.totalBlocksInCycle)")
@@ -79,19 +73,12 @@ public struct ExpandedIslandView: View {
                 Spacer()
 
                 Button {
-                    Task {
-                        await coordinator.startSession()
-                    }
+                    Task { await coordinator.startSession() }
                 } label: {
                     Label("Iniciar", systemImage: "play.fill")
-                        .font(.system(size: 11, weight: .bold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .background(Color.orange)
-                        .foregroundColor(.black)
-                        .cornerRadius(6)
+                        .padding(.horizontal, 4)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pomodoro(.primary(.orange)))
             }
         }
     }
@@ -122,10 +109,7 @@ public struct ExpandedIslandView: View {
 
                 Spacer()
 
-                Text(PomodoroTimeFormat.string(from: coordinator.snapshot.remainingSeconds))
-                    .font(.system(size: 20, weight: .bold, design: .monospaced))
-                    .monospacedDigit()
-                    .foregroundColor(.orange)
+                countdown(color: coordinator.snapshot.isPaused ? .secondary : .orange)
             }
 
             // Fila 2: Barra de progreso sutil
@@ -133,7 +117,6 @@ public struct ExpandedIslandView: View {
                 ZStack(alignment: .leading) {
                     Capsule()
                         .fill(Color.white.opacity(0.12))
-                        .frame(height: 3.5)
                     Capsule()
                         .fill(
                             LinearGradient(
@@ -142,7 +125,8 @@ public struct ExpandedIslandView: View {
                                 endPoint: .trailing
                             )
                         )
-                        .frame(width: geo.size.width * CGFloat(coordinator.snapshot.progress), height: 3.5)
+                        .frame(width: geo.size.width * CGFloat(coordinator.snapshot.progress))
+                        .animation(.linear(duration: 1), value: coordinator.snapshot.progress)
                 }
             }
             .frame(height: 3.5)
@@ -153,29 +137,13 @@ public struct ExpandedIslandView: View {
                     coordinator.presentQuickCapture()
                 } label: {
                     Label("Anotar (⌘I)", systemImage: "pencil")
-                        .font(.system(size: 10.5, weight: .medium))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(6)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pomodoro())
                 .accessibilityLabel("Anotar distracción")
 
                 Spacer()
 
-                Button {
-                    coordinator.showMainWindow()
-                } label: {
-                    Image(systemName: "macwindow")
-                        .font(.system(size: 10.5))
-                        .foregroundColor(.secondary)
-                        .padding(5)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Abrir ventana principal")
+                mainWindowButton
 
                 Button {
                     Task {
@@ -187,27 +155,17 @@ public struct ExpandedIslandView: View {
                     }
                 } label: {
                     Image(systemName: coordinator.snapshot.isPaused ? "play.fill" : "pause.fill")
-                        .font(.system(size: 10.5))
-                        .padding(5)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(6)
+                        .contentTransition(.symbolEffect(.replace))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pomodoro(size: .icon))
                 .accessibilityLabel(coordinator.snapshot.isPaused ? "Reanudar" : "Pausar")
 
                 Button {
-                    Task {
-                        await coordinator.cancelSession()
-                    }
+                    Task { await coordinator.cancelSession() }
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 10.5))
-                        .foregroundColor(.red.opacity(0.9))
-                        .padding(5)
-                        .background(Color.red.opacity(0.15))
-                        .cornerRadius(6)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pomodoro(.destructive, size: .icon))
                 .accessibilityLabel("Cancelar sesión")
             }
         }
@@ -218,7 +176,7 @@ public struct ExpandedIslandView: View {
         VStack(spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Label("Descanso Corto", systemImage: "cup.and.saucer.fill")
+                    Label("Descanso Corto", systemImage: PomodoroPhase.shortBreak.systemImageName)
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.mint)
 
@@ -232,43 +190,24 @@ public struct ExpandedIslandView: View {
 
                 Spacer()
 
-                Text(PomodoroTimeFormat.string(from: coordinator.snapshot.remainingSeconds))
-                    .font(.system(size: 20, weight: .bold, design: .monospaced))
-                    .monospacedDigit()
-                    .foregroundColor(.mint)
+                countdown(color: .mint)
             }
 
             HStack(spacing: 8) {
-                Button {
-                    Task {
-                        await coordinator.addTwoMinutes()
-                    }
-                } label: {
-                    Text("+2 min")
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(6)
+                Button("+2 min") {
+                    Task { await coordinator.addTwoMinutes() }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pomodoro())
 
                 Spacer()
 
                 Button {
-                    Task {
-                        await coordinator.skipBreak()
-                    }
+                    Task { await coordinator.skipBreak() }
                 } label: {
-                    Label("Seguir", systemImage: "arrow.forward.fill")
-                        .font(.system(size: 10.5, weight: .bold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(Color.mint)
-                        .foregroundColor(.black)
-                        .cornerRadius(6)
+                    Label("Seguir", systemImage: "arrow.forward")
+                        .padding(.horizontal, 2)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pomodoro(.primary(.mint)))
             }
         }
     }
@@ -278,7 +217,7 @@ public struct ExpandedIslandView: View {
         VStack(spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Label("Descanso Largo", systemImage: "figure.walk")
+                    Label("Descanso Largo", systemImage: PomodoroPhase.longBreak.systemImageName)
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.cyan)
 
@@ -289,43 +228,21 @@ public struct ExpandedIslandView: View {
 
                 Spacer()
 
-                Text(PomodoroTimeFormat.string(from: coordinator.snapshot.remainingSeconds))
-                    .font(.system(size: 20, weight: .bold, design: .monospaced))
-                    .monospacedDigit()
-                    .foregroundColor(.cyan)
+                countdown(color: .cyan)
             }
 
             HStack(spacing: 8) {
-                Button {
-                    Task {
-                        await coordinator.cancelSession()
-                    }
-                } label: {
-                    Text("Concluir")
-                        .font(.system(size: 10.5, weight: .medium))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(6)
+                Button("Concluir") {
+                    Task { await coordinator.cancelSession() }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pomodoro())
 
                 Spacer()
 
-                Button {
-                    Task {
-                        await coordinator.startNextWorkBlock()
-                    }
-                } label: {
-                    Text("Nuevo Ciclo")
-                        .font(.system(size: 10.5, weight: .bold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(Color.cyan)
-                        .foregroundColor(.black)
-                        .cornerRadius(6)
+                Button("Nuevo Ciclo") {
+                    Task { await coordinator.startNextWorkBlock() }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pomodoro(.primary(.cyan)))
             }
         }
     }
@@ -334,33 +251,47 @@ public struct ExpandedIslandView: View {
     private var overtimeExpandedContent: some View {
         VStack(spacing: 8) {
             HStack {
-                Label("Flow Excedido", systemImage: "exclamationmark.triangle.fill")
+                Label("En flow", systemImage: PomodoroPhase.overtime.systemImageName)
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.yellow)
+                    .symbolEffect(.pulse)
 
                 Spacer()
 
                 Text("+\(PomodoroTimeFormat.string(from: coordinator.snapshot.overtimeSeconds))")
                     .font(.system(size: 20, weight: .bold, design: .monospaced))
-                    .monospacedDigit()
                     .foregroundColor(.yellow)
+                    .rollingDigits(coordinator.snapshot.overtimeSeconds, countsDown: false)
+                    .matchedGeometryEffect(id: "timer", in: namespace)
             }
 
             Button {
-                Task {
-                    await coordinator.takeBreak()
-                }
+                Task { await coordinator.takeBreak() }
             } label: {
-                Text("Tomar Descanso Ahora")
-                    .font(.system(size: 11, weight: .bold))
+                Label("Tomar descanso ahora", systemImage: "cup.and.saucer.fill")
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 5)
-                    .background(Color.yellow)
-                    .foregroundColor(.black)
-                    .cornerRadius(6)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.pomodoro(.primary(.yellow)))
         }
+    }
+
+    private func countdown(color: Color) -> some View {
+        Text(PomodoroTimeFormat.string(from: coordinator.snapshot.remainingSeconds))
+            .font(.system(size: 20, weight: .bold, design: .monospaced))
+            .foregroundColor(color)
+            .rollingDigits(coordinator.snapshot.remainingSeconds)
+            .matchedGeometryEffect(id: "timer", in: namespace)
+    }
+
+    private var mainWindowButton: some View {
+        Button {
+            coordinator.showMainWindow()
+        } label: {
+            Image(systemName: "macwindow")
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.pomodoro(size: .icon))
+        .accessibilityLabel("Abrir ventana principal")
     }
 
     private func blockDotColor(index: Int) -> Color {

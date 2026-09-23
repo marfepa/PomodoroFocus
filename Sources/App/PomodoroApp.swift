@@ -19,21 +19,25 @@ struct PomodoroApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandMenu("Pomodoro") {
-                Button("🎯 Alternar Dynamic Island") {
+                Button("Alternar Dynamic Island") {
                     coordinator.toggleIsland()
                 }
                 .keyboardShortcut("o", modifiers: .command)
 
-                Button("📝 Anotar distracción") {
+                Button("Anotar distracción") {
                     coordinator.presentQuickCapture()
                 }
                 .keyboardShortcut("i", modifiers: .command)
 
-                Button("🖥️ Mostrar Ventana Principal") {
+                Button("Mostrar Ventana Principal") {
                     coordinator.showMainWindow()
                 }
                 .keyboardShortcut("0", modifiers: .command)
             }
+        }
+
+        Settings {
+            SettingsView(coordinator: coordinator)
         }
     }
 }
@@ -117,17 +121,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Pomodoro macOS", action: nil, keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Pomodoro", action: nil, keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "🖥️ Abrir Ventana Principal", action: #selector(openMainWindowAction), keyEquivalent: "0"))
-        menu.addItem(NSMenuItem(title: "🎯 Alternar Dynamic Island (⌘O)", action: #selector(toggleIslandAction), keyEquivalent: "o"))
-        menu.addItem(NSMenuItem(title: "📝 Anotar distracción (⌘I)", action: #selector(triggerQuickCapture), keyEquivalent: "i"))
-        menu.addItem(NSMenuItem(title: "⚙️ Centrar en pantalla", action: #selector(repositionIsland), keyEquivalent: "r"))
+        menu.addItem(menuItem("Abrir Ventana Principal", symbol: "macwindow", action: #selector(openMainWindowAction), key: "0"))
+        menu.addItem(menuItem("Alternar Dynamic Island", symbol: "rectangle.topthird.inset.filled", action: #selector(toggleIslandAction), key: "o"))
+        menu.addItem(menuItem("Anotar distracción", symbol: "pencil.line", action: #selector(triggerQuickCapture), key: "i"))
+        menu.addItem(menuItem("Recolocar la isla", symbol: "arrow.up.and.down.and.arrow.left.and.right", action: #selector(repositionIsland), key: "r"))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Salir", action: #selector(terminateApp), keyEquivalent: "q"))
 
         self.statusMenu = menu
         self.statusItem = item
+    }
+
+    private func menuItem(_ title: String, symbol: String, action: Selector, key: String) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
+        item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        return item
     }
 
     private func updateStatusItem(with snapshot: PomodoroSnapshot) {
@@ -142,22 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard statusPhase != snapshot.phase else { return }
         statusPhase = snapshot.phase
         button.image = NSImage(systemSymbolName: snapshot.phase.systemImageName, accessibilityDescription: snapshot.phase.title)
-        button.contentTintColor = statusTint(for: snapshot.phase)
-    }
-
-    private func statusTint(for phase: PomodoroPhase) -> NSColor {
-        switch phase {
-        case .idle:
-            return .secondaryLabelColor
-        case .work:
-            return .systemOrange
-        case .shortBreak:
-            return .systemMint
-        case .longBreak:
-            return .systemCyan
-        case .overtime:
-            return .systemYellow
-        }
+        button.contentTintColor = snapshot.phase.nsAccentColor
     }
 
     @objc private func statusBarButtonClicked(_ sender: NSStatusBarButton) {
