@@ -15,8 +15,11 @@
 		27BA431BCF0200D560F19725 /* DynamicIslandSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DA7E4A3B45DE845C0B10EA6 /* DynamicIslandSurface.swift */; };
 		30E7A8DAF48EA609925F7AEC /* PomodoroStateCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD8CBE73136EC13BAF64E99 /* PomodoroStateCalculator.swift */; };
 		33549FD1BBBEAB4905821F28 /* IslandGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AA5191C19C759A642D57512 /* IslandGeometry.swift */; };
+		37E70FE05DAEB00DE99918E3 /* IslandShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17AC78C1FAF7220742893AF9 /* IslandShape.swift */; };
+		3FB0294FB1E81DD20F60196C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E783F1DB1875F561A2F0BC9 /* SettingsView.swift */; };
 		4BC5BDC7FBC7DA6AC686D444 /* PomodoroPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC01F39F4608E489CD527008 /* PomodoroPhase.swift */; };
 		55D64D7D25B4D1F927043921 /* SessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EC37F0B291F6FA904E0152B /* SessionCoordinator.swift */; };
+		599F39A20D229EB4DED2FCD2 /* PomodoroStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 069D5547485FC62BE82C9C39 /* PomodoroStyle.swift */; };
 		5DDBF6B67849373D8734F154 /* PomodoroApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57AE167C7F4EE07C19F0A815 /* PomodoroApp.swift */; };
 		7217FC29C9651427E1EB2C9D /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F6E670D12EEE891CC40E7C /* NotificationService.swift */; };
 		848B5CDECB49099967DE1BE9 /* PomodoroFocusFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B382191BA514DDF0B775E3A7 /* PomodoroFocusFilter.swift */; };
@@ -43,10 +46,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		069D5547485FC62BE82C9C39 /* PomodoroStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroStyle.swift; sourceTree = "<group>"; };
 		07CF0C9983F3E731012743BC /* PomodoroCoreEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroCoreEngineTests.swift; sourceTree = "<group>"; };
 		0DA7E4A3B45DE845C0B10EA6 /* DynamicIslandSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicIslandSurface.swift; sourceTree = "<group>"; };
 		109C96D719A7872CD87B9FD9 /* NotificationIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationIntegrationTests.swift; sourceTree = "<group>"; };
 		13AE08D9A779DE0DA2F45A23 /* PomodoroTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PomodoroTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		17AC78C1FAF7220742893AF9 /* IslandShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandShape.swift; sourceTree = "<group>"; };
+		1E783F1DB1875F561A2F0BC9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		237E2BB88E92FA8938055286 /* Interruption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Interruption.swift; sourceTree = "<group>"; };
 		2C9FA777D5141978147827A9 /* PomodoroCoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroCoreEngine.swift; sourceTree = "<group>"; };
 		2EC37F0B291F6FA904E0152B /* SessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCoordinator.swift; sourceTree = "<group>"; };
@@ -140,8 +146,11 @@
 				5B0A90EEE72245558739B421 /* CollapsedNotchWingView.swift */,
 				0DA7E4A3B45DE845C0B10EA6 /* DynamicIslandSurface.swift */,
 				4214EFC48C79C812669AAC8F /* ExpandedIslandView.swift */,
+				17AC78C1FAF7220742893AF9 /* IslandShape.swift */,
 				339CEAD70013B57F6B2271C1 /* MainWindowView.swift */,
+				069D5547485FC62BE82C9C39 /* PomodoroStyle.swift */,
 				CB945D70ED60F1C053176F92 /* QuickInterruptionCaptureView.swift */,
+				1E783F1DB1875F561A2F0BC9 /* SettingsView.swift */,
 			);
 			path = Presentation;
 			sourceTree = "<group>";
@@ -258,6 +267,7 @@
 				CE3DE3B532C1F30F14ED7862 /* ExpandedIslandView.swift in Sources */,
 				1990E03083609EB11EBA7543 /* Interruption.swift in Sources */,
 				33549FD1BBBEAB4905821F28 /* IslandGeometry.swift in Sources */,
+				37E70FE05DAEB00DE99918E3 /* IslandShape.swift in Sources */,
 				D30B8B1AFF80960B49F0E977 /* MainWindowView.swift in Sources */,
 				CD95B7FCD12394F0D628B503 /* NotchWindowController.swift in Sources */,
 				7217FC29C9651427E1EB2C9D /* NotificationService.swift in Sources */,
@@ -267,10 +277,12 @@
 				4BC5BDC7FBC7DA6AC686D444 /* PomodoroPhase.swift in Sources */,
 				06D722311F5DAC976F2E7F5A /* PomodoroPreset.swift in Sources */,
 				30E7A8DAF48EA609925F7AEC /* PomodoroStateCalculator.swift in Sources */,
+				599F39A20D229EB4DED2FCD2 /* PomodoroStyle.swift in Sources */,
 				9B621809D8F40587E89FC671 /* PomodoroTimeFormat.swift in Sources */,
 				89D31F23C4FE33979E2DFE77 /* QuickInterruptionCaptureView.swift in Sources */,
 				55D64D7D25B4D1F927043921 /* SessionCoordinator.swift in Sources */,
 				A431DE520D9E560E14E473FB /* SessionStore.swift in Sources */,
+				3FB0294FB1E81DD20F60196C /* SettingsView.swift in Sources */,
 				A33E72A0AC566B9E3C4817BD /* SystemFocusController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

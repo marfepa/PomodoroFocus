@@ -1,14 +1,21 @@
 import SwiftUI
 
-/// Ventana de escritorio tradicional para la configuración, métricas y control del Pomodoro.
+/// Ventana de escritorio tradicional para las métricas y el control del Pomodoro.
 public struct MainWindowView: View {
     @Bindable public var coordinator: SessionCoordinator
     @State private var internalDistractionNote: String = ""
     @State private var distractionType: InterruptionType = .internal
-    @State private var showSettings: Bool = false
 
     public init(coordinator: SessionCoordinator) {
         self.coordinator = coordinator
+    }
+
+    private var phase: PomodoroPhase {
+        coordinator.snapshot.phase
+    }
+
+    private var isShowingOvertime: Bool {
+        phase == .overtime || coordinator.snapshot.overtimeSeconds > 0
     }
 
     public var body: some View {
@@ -29,6 +36,7 @@ public struct MainWindowView: View {
             }
             .padding(28)
             .frame(minWidth: 460, maxWidth: 520)
+            .background(phaseAtmosphere)
 
             Divider()
 
@@ -44,36 +52,30 @@ public struct MainWindowView: View {
 
                 distractionCaptureCard
 
-                if showSettings {
-                    settingsCard
+                if let focusStatusMessage = coordinator.focusStatusMessage {
+                    Label(focusStatusMessage, systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.red)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer()
 
                 HStack {
-                    Button {
-                        showSettings.toggle()
-                    } label: {
-                        Label(showSettings ? "Ocultar Ajustes" : "Ajustes de Enfoque", systemImage: "gearshape")
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
+                    SettingsLink {
+                        Label("Ajustes", systemImage: "gearshape")
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pomodoro())
 
                     Spacer()
 
                     Button {
                         coordinator.toggleIsland()
                     } label: {
-                        Label("Notch Dynamic Island", systemImage: "sparkles")
-                            .font(.system(size: 11, weight: .semibold))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color.accentColor.opacity(0.12))
-                            .foregroundColor(.accentColor)
-                            .cornerRadius(6)
+                        Label("Dynamic Island", systemImage: "sparkles")
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pomodoro())
+                    .help("Alternar la Dynamic Island (⌘O)")
                 }
             }
             .padding(24)
@@ -82,9 +84,21 @@ public struct MainWindowView: View {
         }
         .frame(minWidth: 780, minHeight: 560)
         .background(Color(nsColor: .windowBackgroundColor))
+        .animation(.easeInOut(duration: 0.6), value: phase)
         .onChange(of: coordinator.shouldMinimizeOnStart) { _, _ in
             coordinator.persistSettings()
         }
+    }
+
+    /// Halo tenue del color de la fase detrás del anillo: identifica el estado de un vistazo.
+    private var phaseAtmosphere: some View {
+        RadialGradient(
+            colors: [phase.accentColor.opacity(phase == .idle ? 0.04 : 0.12), .clear],
+            center: .center,
+            startRadius: 40,
+            endRadius: 340
+        )
+        .allowsHitTesting(false)
     }
 
     // MARK: - Cabecera
@@ -101,17 +115,16 @@ public struct MainWindowView: View {
 
             // Badge de fase actual
             HStack(spacing: 6) {
-                Circle()
-                    .fill(coordinator.snapshot.phase.accentColor)
-                    .frame(width: 8, height: 8)
-                Text(coordinator.snapshot.phase.title)
+                Image(systemName: phase.systemImageName)
+                    .font(.system(size: 10, weight: .bold))
+                    .contentTransition(.symbolEffect(.replace))
+                Text(phase.title)
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(coordinator.snapshot.phase.accentColor)
             }
+            .foregroundColor(phase.legibleAccentColor)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .background(coordinator.snapshot.phase.accentColor.opacity(0.12))
-            .cornerRadius(12)
+            .background(phase.accentColor.opacity(0.14), in: Capsule())
         }
     }
 
@@ -127,28 +140,30 @@ public struct MainWindowView: View {
                 Circle()
                     .trim(from: 0, to: CGFloat(coordinator.snapshot.progress))
                     .stroke(
-                        coordinator.snapshot.phase.accentColor,
+                        phase.accentColor,
                         style: StrokeStyle(lineWidth: 14, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
+                    .shadow(color: phase.accentColor.opacity(0.35), radius: 6)
                     .animation(.linear(duration: 1), value: coordinator.snapshot.progress)
 
                 VStack(spacing: 6) {
-                    if coordinator.snapshot.phase == .overtime || coordinator.snapshot.overtimeSeconds > 0 {
+                    if isShowingOvertime {
                         Text("+\(PomodoroTimeFormat.string(from: coordinator.snapshot.overtimeSeconds))")
                             .font(.system(size: 48, weight: .bold, design: .monospaced))
-                            .monospacedDigit()
-                            .foregroundColor(.yellow)
-                        Text("TIEMPO EXCEDIDO")
+                            .foregroundColor(PomodoroPhase.overtime.legibleAccentColor)
+                            .rollingDigits(coordinator.snapshot.overtimeSeconds, countsDown: false)
+                        Text("EN FLOW")
                             .font(.system(size: 11, weight: .bold))
+                            .tracking(1.2)
                             .foregroundColor(.secondary)
                     } else {
                         Text(PomodoroTimeFormat.string(from: coordinator.snapshot.remainingSeconds))
                             .font(.system(size: 52, weight: .bold, design: .monospaced))
-                            .monospacedDigit()
-                            .foregroundColor(.primary)
+                            .foregroundColor(coordinator.snapshot.isPaused ? .secondary : .primary)
+                            .rollingDigits(coordinator.snapshot.remainingSeconds)
 
-                        Text(coordinator.snapshot.phase == .idle ? "Listo para comenzar" : (coordinator.snapshot.currentTaskTitle ?? "Sesión de Enfoque"))
+                        Text(phase == .idle ? "Listo para comenzar" : (coordinator.snapshot.currentTaskTitle ?? "Sesión de Enfoque"))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.secondary)
                             .lineLimit(1)
@@ -158,23 +173,17 @@ public struct MainWindowView: View {
             .frame(width: 240, height: 240)
 
             // Selectores de duración (solo cuando está inactivo)
-            if coordinator.snapshot.phase == .idle {
+            if phase == .idle {
                 HStack(spacing: 10) {
                     ForEach(PomodoroPreset.allPresets) { preset in
-                        Button {
+                        let isSelected = coordinator.selectedPreset == preset
+                        Button(preset.shortName) {
                             Task { await coordinator.selectPreset(preset) }
-                        } label: {
-                            Text(preset.shortName)
-                                .font(.system(size: 11, weight: .semibold))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(coordinator.selectedPreset == preset ? Color.orange : Color.secondary.opacity(0.12))
-                                .foregroundColor(coordinator.selectedPreset == preset ? .black : .primary)
-                                .cornerRadius(8)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.pomodoro(isSelected ? .primary(.orange) : .secondary))
                     }
                 }
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
     }
@@ -182,7 +191,7 @@ public struct MainWindowView: View {
     // MARK: - Controles y Campo de Objetivo
     private var controlsView: some View {
         VStack(spacing: 12) {
-            if coordinator.snapshot.phase == .idle {
+            if phase == .idle {
                 HStack {
                     Image(systemName: "target")
                         .foregroundColor(.secondary)
@@ -191,30 +200,25 @@ public struct MainWindowView: View {
                         .font(.system(size: 13))
                 }
                 .padding(10)
-                .background(Color.secondary.opacity(0.08))
-                .cornerRadius(10)
+                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
 
             // Botón de acción principal
             HStack(spacing: 12) {
-                if coordinator.snapshot.phase == .idle {
+                if phase == .idle {
                     Button {
-                        Task {
-                            await coordinator.startSession()
-                        }
+                        Task { await coordinator.startSession() }
                     } label: {
                         Label("Iniciar Enfoque", systemImage: "play.fill")
                             .font(.system(size: 14, weight: .bold))
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.orange)
-                            .foregroundColor(.black)
-                            .cornerRadius(10)
+                            .padding(.vertical, 2)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pomodoro(.primary(.orange), size: .regular))
+                    .keyboardShortcut(.defaultAction)
                 } else {
                     // Controles durante sesión activa (el overtime no se pausa)
-                    if coordinator.snapshot.phase != .overtime {
+                    if phase != .overtime {
                         Button {
                             Task {
                                 if coordinator.snapshot.isPaused {
@@ -224,64 +228,44 @@ public struct MainWindowView: View {
                                 }
                             }
                         } label: {
-                            Label(coordinator.snapshot.isPaused ? "Reanudar" : "Pausar", systemImage: coordinator.snapshot.isPaused ? "play.fill" : "pause.fill")
-                                .font(.system(size: 13, weight: .bold))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(Color.secondary.opacity(0.15))
-                                .foregroundColor(.primary)
-                                .cornerRadius(8)
+                            Label(
+                                coordinator.snapshot.isPaused ? "Reanudar" : "Pausar",
+                                systemImage: coordinator.snapshot.isPaused ? "play.fill" : "pause.fill"
+                            )
+                            .contentTransition(.symbolEffect(.replace))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.pomodoro(size: .regular))
                     }
 
-                    if coordinator.snapshot.phase == .overtime {
+                    if phase == .overtime {
                         Button {
                             Task { await coordinator.takeBreak() }
                         } label: {
                             Label("Tomar descanso", systemImage: "cup.and.saucer.fill")
-                                .font(.system(size: 13, weight: .bold))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(Color.yellow)
-                                .foregroundColor(.black)
-                                .cornerRadius(8)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.pomodoro(.primary(.yellow), size: .regular))
                     }
 
-                    if coordinator.snapshot.phase == .shortBreak || coordinator.snapshot.phase == .longBreak {
+                    if phase == .shortBreak || phase == .longBreak {
                         Button {
-                            Task {
-                                await coordinator.skipBreak()
-                            }
+                            Task { await coordinator.skipBreak() }
                         } label: {
-                            Label("Volver a Trabajar", systemImage: "arrow.forward.fill")
-                                .font(.system(size: 13, weight: .bold))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(Color.mint)
-                                .foregroundColor(.black)
-                                .cornerRadius(8)
+                            Label("Volver a Trabajar", systemImage: "arrow.forward")
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.pomodoro(.primary(.mint), size: .regular))
                     }
 
                     Spacer()
 
                     Button {
-                        Task {
-                            await coordinator.cancelSession()
-                        }
+                        Task { await coordinator.cancelSession() }
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 12, weight: .bold))
-                            .padding(10)
-                            .background(Color.red.opacity(0.15))
-                            .foregroundColor(.red)
-                            .cornerRadius(8)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pomodoro(.destructive, size: .regular))
+                    .help("Cancelar sesión")
+                    .accessibilityLabel("Cancelar sesión")
                 }
             }
         }
@@ -312,7 +296,7 @@ public struct MainWindowView: View {
             HStack(spacing: 8) {
                 ForEach(1...coordinator.snapshot.totalBlocksInCycle, id: \.self) { idx in
                     ZStack {
-                        RoundedRectangle(cornerRadius: 6)
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
                             .fill(blockFill(index: idx))
                             .frame(height: 24)
                         Text("\(idx)")
@@ -323,56 +307,44 @@ public struct MainWindowView: View {
             }
         }
         .padding(12)
-        .background(Color.secondary.opacity(0.08))
-        .cornerRadius(10)
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     private var metricsCard: some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(coordinator.snapshot.completedPomodorosToday)")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.primary)
-                Text("Pomodoros hoy")
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            metric(value: coordinator.snapshot.completedPomodorosToday, label: "Pomodoros hoy", color: .primary)
 
             Divider().frame(height: 32)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(coordinator.snapshot.internalInterruptionsCount)")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.orange)
-                Text("Internas (')")
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            metric(value: coordinator.snapshot.internalInterruptionsCount, label: "Internas (')", color: PomodoroPhase.work.legibleAccentColor)
 
             Divider().frame(height: 32)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(coordinator.snapshot.externalInterruptionsCount)")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.cyan)
-                Text("Externas (-)")
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            metric(value: coordinator.snapshot.externalInterruptionsCount, label: "Externas (-)", color: PomodoroPhase.longBreak.legibleAccentColor)
         }
         .padding(12)
-        .background(Color.secondary.opacity(0.08))
-        .cornerRadius(10)
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private func metric(value: Int, label: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("\(value)")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(color)
+                .contentTransition(.numericText(value: Double(value)))
+                .animation(.snappy, value: value)
+            Text(label)
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var distractionCaptureCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Diario de interrupciones", systemImage: "pencil.line")
                 .font(.system(size: 11, weight: .bold))
-                .foregroundColor(.orange)
+                .foregroundColor(PomodoroPhase.work.legibleAccentColor)
 
             Picker("Tipo", selection: $distractionType) {
                 Text("Interna (')").tag(InterruptionType.internal)
@@ -386,8 +358,7 @@ public struct MainWindowView: View {
                     .textFieldStyle(.plain)
                     .font(.system(size: 11))
                     .padding(6)
-                    .background(Color.secondary.opacity(0.08))
-                    .cornerRadius(6)
+                    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                     .onSubmit {
                         submitNote()
                     }
@@ -395,11 +366,11 @@ public struct MainWindowView: View {
                 Button {
                     submitNote()
                 } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundColor(.orange)
-                        .font(.system(size: 16))
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .bold))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pomodoro(.primary(.orange), size: .icon))
+                .disabled(internalDistractionNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .accessibilityLabel("Guardar interrupción")
             }
 
@@ -414,7 +385,7 @@ public struct MainWindowView: View {
                             HStack(alignment: .firstTextBaseline, spacing: 6) {
                                 Text(record.type.notation)
                                     .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                    .foregroundColor(record.type == .internal ? .orange : .cyan)
+                                    .foregroundColor(record.type == .internal ? PomodoroPhase.work.legibleAccentColor : PomodoroPhase.longBreak.legibleAccentColor)
                                     .frame(width: 12)
                                 Text(record.note)
                                     .font(.system(size: 11))
@@ -424,52 +395,16 @@ public struct MainWindowView: View {
                                     .font(.system(size: 10, design: .monospaced))
                                     .foregroundColor(.secondary)
                             }
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                     }
+                    .animation(.snappy, value: coordinator.interruptions.map(\.id))
                 }
                 .frame(maxHeight: 120)
             }
         }
         .padding(12)
-        .background(Color.secondary.opacity(0.08))
-        .cornerRadius(10)
-    }
-
-    private var settingsCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Ajustes de Concentración")
-                .font(.system(size: 11, weight: .bold))
-
-            Toggle("Automatizar Modos de Concentración", isOn: $coordinator.enableFocusAutomation)
-                .font(.system(size: 10))
-
-            TextField("Nombre de atajo al trabajar", text: $coordinator.workShortcutName)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(size: 10))
-
-            TextField("Nombre de atajo al descansar", text: $coordinator.defaultShortcutName)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(size: 10))
-
-            if let focusStatusMessage = coordinator.focusStatusMessage {
-                Text(focusStatusMessage)
-                    .font(.system(size: 10))
-                    .foregroundColor(.red)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(12)
-        .background(Color.secondary.opacity(0.08))
-        .cornerRadius(10)
-        .onChange(of: coordinator.enableFocusAutomation) { _, _ in
-            coordinator.persistSettings()
-        }
-        .onChange(of: coordinator.workShortcutName) { _, _ in
-            coordinator.persistSettings()
-        }
-        .onChange(of: coordinator.defaultShortcutName) { _, _ in
-            coordinator.persistSettings()
-        }
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     private var cycleLabel: String {

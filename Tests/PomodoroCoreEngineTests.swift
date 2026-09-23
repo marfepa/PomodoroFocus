@@ -223,11 +223,32 @@ final class PomodoroCoreEngineTests: XCTestCase {
             isQuickCapturePresented: false,
             phase: .overtime
         )
-        XCTAssertEqual(geometry.width, 350)
-        XCTAssertEqual(geometry.height, 118)
+        // El contenido expandido baja por debajo del notch y las orejas ensanchan la silueta.
+        XCTAssertEqual(geometry.topInset, 32)
+        XCTAssertEqual(geometry.earRadius, 12)
+        XCTAssertEqual(geometry.width, 374)
+        XCTAssertEqual(geometry.height, 78 + 32)
         let rect = geometry.rect(panelWidth: 660, panelHeight: 280)
         XCTAssertEqual(rect.midX, 330, accuracy: 0.001)
         XCTAssertEqual(rect.maxY, 280, accuracy: 0.001)
+    }
+
+    func testIdleIslandIsNarrowerThanActiveIsland() {
+        let notch = DisplayNotchMetrics(
+            frame: CGRect(x: 0, y: 0, width: 180, height: 32),
+            hasHardwareNotch: true,
+            screenFrame: CGRect(x: 0, y: 0, width: 1400, height: 900)
+        )
+        let idle = IslandGeometry.current(metrics: notch, isExpanded: false, isQuickCapturePresented: false, phase: .idle)
+        let work = IslandGeometry.current(metrics: notch, isExpanded: false, isQuickCapturePresented: false, phase: .work)
+        XCTAssertLessThan(idle.width, work.width)
+        XCTAssertGreaterThan(idle.width, notch.frame.width, "Las alas en reposo no pueden quedar tapadas por el notch")
+        XCTAssertEqual(idle.topInset, 0)
+
+        let floating = IslandGeometry.current(metrics: .detached, isExpanded: true, isQuickCapturePresented: false, phase: .work)
+        XCTAssertEqual(floating.earRadius, 0)
+        XCTAssertEqual(floating.topInset, 0)
+        XCTAssertEqual(floating.width, 350)
     }
 
     func testPauseAndResumeDeterminism() async {
