@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Ajustes que sobreviven al cierre de la app.
 public struct PersistedSettings: Codable, Sendable, Equatable {
@@ -51,29 +52,41 @@ public struct SessionStore: Sendable {
         return SessionStore(fileURL: directory.appendingPathComponent("session.json"))
     }
 
+    /// Un archivo ilegible se aparta como `session.corrupt-<fecha>.json` para que el siguiente guardado no lo destruya.
     public func load() -> PersistedSession? {
         guard let fileURL, FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
-        guard let data = try? Data(contentsOf: fileURL) else { return nil }
-        return try? Self.decoder.decode(PersistedSession.self, from: data)
+        do {
+            let data = try Data(contentsOf: fileURL)
+            return try Self.decoder.decode(PersistedSession.self, from: data)
+        } catch {
+            Self.logger.error("No se pudo leer la sesión guardada: \(error.localizedDescription, privacy: .public)")
+            quarantine(fileURL)
+            return nil
+        }
     }
 
     public func save(_ session: PersistedSession) {
         guard let fileURL else { return }
-        let directory = fileURL.deletingLastPathComponent()
         do {
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let data = try Self.encoder.encode(session)
-            let temporary = directory.appendingPathComponent("session-\(UUID().uuidString).json")
-            try data.write(to: temporary, options: .atomic)
-            if FileManager.default.fileExists(atPath: fileURL.path) {
-                _ = try FileManager.default.replaceItemAt(fileURL, withItemAt: temporary)
-            } else {
-                try FileManager.default.moveItem(at: temporary, to: fileURL)
-            }
+            try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try Self.encoder.encode(session).write(to: fileURL, options: .atomic)
         } catch {
-            return
+            Self.logger.error("No se pudo guardar la sesión: \(error.localizedDescription, privacy: .public)")
         }
     }
+
+    private func quarantine(_ fileURL: URL) {
+        let stamp = Int(Date().timeIntervalSince1970)
+        let backup = fileURL.deletingLastPathComponent()
+            .appendingPathComponent("session.corrupt-\(stamp).json")
+        do {
+            try FileManager.default.moveItem(at: fileURL, to: backup)
+        } catch {
+            Self.logger.error("No se pudo apartar la sesión ilegible: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    private static let logger = Logger(subsystem: "com.antigravity.pomodoro", category: "SessionStore")
 
     private static let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -87,4 +100,20 @@ public struct SessionStore: Sendable {
         decoder.dateDecodingStrategy = .iso8601
         return decoder
     }()
+}
+
+/// Escribe fuera del hilo principal. Si dos guardados llegan desordenados, gana el más reciente.
+public actor SessionWriter {
+    private let store: SessionStore
+    private var lastWrittenGeneration = 0
+
+    public init(store: SessionStore) {
+        self.store = store
+    }
+
+    public func write(_ session: PersistedSession, generation: Int) {
+        guard generation > lastWrittenGeneration else { return }
+        lastWrittenGeneration = generation
+        store.save(session)
+    }
 }

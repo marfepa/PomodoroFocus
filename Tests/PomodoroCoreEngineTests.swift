@@ -251,6 +251,121 @@ final class PomodoroCoreEngineTests: XCTestCase {
         XCTAssertEqual(snap.remainingSeconds, 20 * 60, accuracy: 1.0)
     }
 
+    func testPauseIsIgnoredDuringOvertime() async {
+        let engine = PomodoroCoreEngine(preset: .testFast)
+        let start = Date()
+        await engine.startWork()
+        let expiry = start.addingTimeInterval(11)
+        _ = await engine.enterOvertime(at: expiry)
+
+        await engine.pause(at: expiry.addingTimeInterval(5))
+        await engine.resume(at: expiry.addingTimeInterval(8))
+
+        let snap = await engine.getSnapshot(at: expiry.addingTimeInterval(20))
+        XCTAssertFalse(snap.isPaused)
+        XCTAssertEqual(snap.phase, .overtime)
+        XCTAssertGreaterThanOrEqual(snap.overtimeSeconds, 20, "El overtime acumulado no puede reiniciarse")
+    }
+
+    func testExtraTimeOnlyExtendsCountdowns() async {
+        let engine = PomodoroCoreEngine(preset: .testFast)
+        let idleExtended = await engine.addExtraTime(120)
+        XCTAssertFalse(idleExtended)
+
+        await engine.startWork()
+        let expiry = Date().addingTimeInterval(11)
+        _ = await engine.enterOvertime(at: expiry)
+        let overtimeExtended = await engine.addExtraTime(120)
+        XCTAssertFalse(overtimeExtended)
+        let overtimeSnap = await engine.getSnapshot(at: expiry.addingTimeInterval(1))
+        XCTAssertEqual(overtimeSnap.remainingSeconds, 0, "El overtime no debe volver a mostrar cuenta atrás")
+
+        _ = await engine.beginBreak(at: expiry)
+        let before = await engine.getSnapshot()
+        let breakExtended = await engine.addExtraTime(120)
+        XCTAssertTrue(breakExtended)
+        let after = await engine.getSnapshot()
+        XCTAssertEqual(after.remainingSeconds - before.remainingSeconds, 120, accuracy: 1)
+    }
+
+    func testSnapshotRendersSameWithinTheSameSecond() async {
+        let engine = PomodoroCoreEngine(preset: .standard25)
+        let start = Date()
+        await engine.startWork()
+        await engine.pause(at: start)
+        await engine.resume(at: start)
+
+        let a = await engine.getSnapshot(at: start.addingTimeInterval(0.1))
+        let b = await engine.getSnapshot(at: start.addingTimeInterval(0.4))
+        let c = await engine.getSnapshot(at: start.addingTimeInterval(1.2))
+        XCTAssertTrue(a.rendersSame(as: b))
+        XCTAssertFalse(a.rendersSame(as: c))
+    }
+
+    func testBlockStateFollowsCycle() async {
+        let engine = PomodoroCoreEngine(preset: .testFast)
+        await engine.startWork()
+        var snap = await engine.getSnapshot()
+        XCTAssertEqual(snap.blockState(at: 1), .current)
+        XCTAssertEqual(snap.blockState(at: 2), .pending)
+
+        let expiry = Date().addingTimeInterval(11)
+        _ = await engine.enterOvertime(at: expiry)
+        _ = await engine.beginBreak(at: expiry)
+        snap = await engine.getSnapshot()
+        XCTAssertEqual(snap.phase, .shortBreak)
+        XCTAssertEqual(snap.blockState(at: 1), .completed)
+        XCTAssertEqual(snap.blockState(at: 2), .pending)
+    }
+
+    func testTodayInterruptionCountsIgnoreOtherDays() async {
+        let engine = PomodoroCoreEngine()
+        let now = Date()
+        let yesterday = now.addingTimeInterval(-36 * 60 * 60)
+        let checkpoint = EngineCheckpoint(
+            phase: .idle,
+            presetID: PomodoroPreset.standard25.id,
+            taskTitle: nil,
+            currentBlockInCycle: 1,
+            completedBlocksInCycle: 0,
+            nextBlockInCycle: 1,
+            completedPomodorosToday: 0,
+            dayStamp: PomodoroDay.stamp(now),
+            isPaused: false,
+            pausedRemainingTime: 0,
+            duration: nil,
+            startTimestamp: nil,
+            targetTimestamp: nil,
+            interruptions: [
+                InterruptionRecord(type: .internal, note: "Ayer", timestamp: yesterday, phase: .work),
+                InterruptionRecord(type: .external, note: "Hoy", timestamp: now, phase: .work)
+            ]
+        )
+        await engine.importCheckpoint(checkpoint, at: now)
+        var snap = await engine.getSnapshot(at: now)
+        XCTAssertEqual(snap.internalInterruptionsCount, 0)
+        XCTAssertEqual(snap.externalInterruptionsCount, 1)
+
+        await engine.recordInterruption(type: .internal, note: "Correo", at: now)
+        snap = await engine.getSnapshot(at: now)
+        XCTAssertEqual(snap.internalInterruptionsCount, 1)
+    }
+
+    func testCorruptSessionIsQuarantinedInsteadOfLost() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let fileURL = directory.appendingPathComponent("session.json")
+        try Data("{ no es json".utf8).write(to: fileURL)
+
+        let store = SessionStore(fileURL: fileURL)
+        XCTAssertNil(store.load())
+
+        let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        XCTAssertFalse(files.contains("session.json"))
+        XCTAssertTrue(files.contains { $0.hasPrefix("session.corrupt-") })
+    }
+
     func testDisplayNotchMetricsResolution() {
         let screen = NSScreen.main ?? NSScreen.screens.first!
         let metrics = DisplayNotchMetrics.resolve(for: screen)

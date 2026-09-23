@@ -18,10 +18,6 @@ public final class SessionCoordinator {
     public var focusStatusMessage: String?
     public var notchMetrics: DisplayNotchMetrics
 
-    public var isIslandActive: Bool {
-        true
-    }
-
     public func toggleIsland() {
         guard !isQuickCapturePresented else { return }
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -37,7 +33,11 @@ public final class SessionCoordinator {
     private let focusController: SystemFocusController
     public let notificationService: NotificationServiceProtocol
     private let store: SessionStore
+    private let writer: SessionWriter
+    private var persistGeneration = 0
+    private var settingsPersistTask: Task<Void, Never>?
     private var tickerTimer: Timer?
+    private var isTicking = false
     private var hoverTask: Task<Void, Never>?
     private var localKeyMonitor: Any?
     private var restoreTask: Task<Void, Never>?
@@ -73,9 +73,9 @@ public final class SessionCoordinator {
         self.focusController = SystemFocusController()
         self.notificationService = notificationService
         self.store = store
-        let screen = NSScreen.main ?? NSScreen.screens.first
-        self.notchMetrics = screen.map { DisplayNotchMetrics.resolve(for: $0) }
-            ?? DisplayNotchMetrics(frame: CGRect(x: 0, y: 0, width: 210, height: 32), hasHardwareNotch: false, screenFrame: CGRect(x: 0, y: 0, width: 1440, height: 900))
+        self.writer = SessionWriter(store: store)
+        self.notchMetrics = DisplayNotchMetrics.preferredScreen().map { DisplayNotchMetrics.resolve(for: $0) }
+            ?? .detached
         self.snapshot = PomodoroSnapshot(
             phase: .idle,
             currentPreset: .standard25,
@@ -92,7 +92,6 @@ public final class SessionCoordinator {
             externalInterruptionsCount: 0
         )
 
-        setupTicker()
         setupKeyboardMonitoring()
         setupNotificationObservers()
         setupNotificationActions()
@@ -103,18 +102,33 @@ public final class SessionCoordinator {
         tickerTimer?.invalidate()
         hoverTask?.cancel()
         restoreTask?.cancel()
+        settingsPersistTask?.cancel()
         if let monitor = localKeyMonitor {
             NSEvent.removeMonitor(monitor)
         }
     }
 
-    private func setupTicker() {
-        tickerTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in
-                await self.updateTick()
+    /// En espera o en pausa nada cambia con el tiempo, así que el reloj solo corre con una sesión en marcha.
+    private func refreshTicker() {
+        let needsTicks = snapshot.phase != .idle && !snapshot.isPaused
+        if needsTicks, tickerTimer == nil {
+            let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
+                guard let self else { return }
+                Task { @MainActor in
+                    await self.updateTick()
+                }
             }
+            timer.tolerance = 0.05
+            RunLoop.main.add(timer, forMode: .common)
+            tickerTimer = timer
+        } else if !needsTicks, let timer = tickerTimer {
+            timer.invalidate()
+            tickerTimer = nil
         }
+    }
+
+    var isTickerRunning: Bool {
+        tickerTimer != nil
     }
 
     private func ensureRestored() async {
@@ -122,27 +136,32 @@ public final class SessionCoordinator {
     }
 
     private func updateTick() async {
+        guard !isTicking else { return }
+        isTicking = true
+        defer { isTicking = false }
+
         await ensureRestored()
         let now = Date()
-        let oldPhase = snapshot.phase
-        let currentSnap = await engine.getSnapshot(at: now)
+        let current = await engine.getSnapshot(at: now)
+        let hasExpired = !current.isPaused && current.remainingSeconds <= 0
+            && (current.phase == .work || current.phase == .shortBreak || current.phase == .longBreak)
 
-        if !currentSnap.isPaused && currentSnap.remainingSeconds <= 0 && currentSnap.phase == .work {
-            playPhaseTransitionSound()
-            _ = await engine.enterOvertime(at: now)
-            await publish(at: now)
-            await handleFocusModeTransition(from: oldPhase, to: snapshot.phase)
-            await persist()
-        } else if !currentSnap.isPaused && currentSnap.remainingSeconds <= 0 && (currentSnap.phase == .shortBreak || currentSnap.phase == .longBreak) {
-            playPhaseTransitionSound()
-            _ = await engine.transitionOnExpiry(at: now)
-            await publish(at: now)
-            await handleFocusModeTransition(from: oldPhase, to: snapshot.phase)
-            await persist()
-        } else {
-            snapshot = currentSnap
+        if hasExpired {
+            let newPhase = await engine.transitionOnExpiry(at: now)
+            if newPhase != current.phase {
+                playPhaseTransitionSound()
+                await publish(at: now)
+                await handleFocusModeTransition(from: current.phase, to: newPhase)
+                await persist()
+                return
+            }
+        }
+
+        if !current.rendersSame(as: snapshot) {
+            snapshot = current
             onSnapshotChange?(snapshot)
         }
+        refreshTicker()
     }
 
     public func handleHoverChange(isInside: Bool) {
@@ -223,6 +242,7 @@ public final class SessionCoordinator {
         await ensureRestored()
         await engine.pause()
         await publish()
+        guard snapshot.isPaused else { return }
         notificationService.cancelPendingPhaseNotification()
         await persist()
     }
@@ -274,15 +294,24 @@ public final class SessionCoordinator {
         await persist()
     }
 
+    /// En overtime no hay cuenta atrás que alargar: «+2 min» pospone el recordatorio de cerrar el bloque.
     public func addTwoMinutes() async {
         await ensureRestored()
-        await engine.addExtraTime(2 * 60)
+        let extended = await engine.addExtraTime(2 * 60)
         await publish()
-        notificationService.schedulePhaseCompletion(
-            phase: snapshot.phase,
-            taskTitle: snapshot.currentTaskTitle,
-            duration: snapshot.remainingSeconds
-        )
+        guard extended else {
+            if snapshot.phase == .overtime {
+                notificationService.scheduleOvertimeReminder(taskTitle: snapshot.currentTaskTitle, after: 2 * 60)
+            }
+            return
+        }
+        if !snapshot.isPaused {
+            notificationService.schedulePhaseCompletion(
+                phase: snapshot.phase,
+                taskTitle: snapshot.currentTaskTitle,
+                duration: snapshot.remainingSeconds
+            )
+        }
         await persist()
     }
 
@@ -330,8 +359,14 @@ public final class SessionCoordinator {
         }
     }
 
+    /// Los campos de texto llaman aquí en cada pulsación; solo se escribe cuando el usuario deja de teclear.
     public func persistSettings() {
-        Task { await self.persist() }
+        settingsPersistTask?.cancel()
+        settingsPersistTask = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            await self.persist()
+        }
     }
 
     private func setupKeyboardMonitoring() {
@@ -357,6 +392,18 @@ public final class SessionCoordinator {
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.dismissQuickCapture()
+            }
+        }
+
+        // Con el reloj parado en espera, el cambio de día es lo único que mueve los contadores de «hoy».
+        NotificationCenter.default.addObserver(
+            forName: .NSCalendarDayChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                Task { await self.publish() }
             }
         }
     }
@@ -408,13 +455,15 @@ public final class SessionCoordinator {
         let records = await engine.getInterruptions()
         interruptions = records.filter { PomodoroDay.isSameDay($0.timestamp, as: now) }
         onSnapshotChange?(snapshot)
+        refreshTicker()
     }
 
     private func persist() async {
         guard didRestore else { return }
         let checkpoint = await engine.exportCheckpoint()
         let payload = PersistedSession(settings: currentSettings(), checkpoint: checkpoint)
-        store.save(payload)
+        persistGeneration += 1
+        await writer.write(payload, generation: persistGeneration)
     }
 
     private func currentSettings() -> PersistedSettings {

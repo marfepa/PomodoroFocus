@@ -75,11 +75,21 @@ public struct CollapsedNotchWingView: View {
             HStack(spacing: 2.5) {
                 ForEach(1...snapshot.totalBlocksInCycle, id: \.self) { index in
                     Circle()
-                        .fill(index <= snapshot.currentBlockInCycle ? snapshot.phase.accentColor : Color.white.opacity(0.2))
+                        .fill(blockDotColor(index: index))
                         .frame(width: 3.5, height: 3.5)
                 }
             }
         }
     }
 
+    private func blockDotColor(index: Int) -> Color {
+        switch snapshot.blockState(at: index) {
+        case .completed:
+            return PomodoroPhase.work.accentColor
+        case .current:
+            return snapshot.phase.accentColor.opacity(0.45)
+        case .pending:
+            return Color.white.opacity(0.2)
+        }
+    }
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Snapshot inmutable del estado del motor en un instante dado.
-public struct PomodoroSnapshot: Sendable, Codable {
+public struct PomodoroSnapshot: Sendable, Codable, Equatable {
     public let phase: PomodoroPhase
     public let currentPreset: PomodoroPreset
     public let currentTaskTitle: String?
@@ -44,6 +44,39 @@ public struct PomodoroSnapshot: Sendable, Codable {
         self.completedPomodorosToday = completedPomodorosToday
         self.internalInterruptionsCount = internalInterruptionsCount
         self.externalInterruptionsCount = externalInterruptionsCount
+    }
+
+    /// Dos snapshots que pintan lo mismo en pantalla (segundos enteros), aunque difieran en fracciones.
+    public func rendersSame(as other: PomodoroSnapshot) -> Bool {
+        phase == other.phase
+            && isPaused == other.isPaused
+            && Int(remainingSeconds) == Int(other.remainingSeconds)
+            && Int(overtimeSeconds) == Int(other.overtimeSeconds)
+            && currentPreset == other.currentPreset
+            && currentTaskTitle == other.currentTaskTitle
+            && currentBlockInCycle == other.currentBlockInCycle
+            && completedBlocksInCycle == other.completedBlocksInCycle
+            && totalBlocksInCycle == other.totalBlocksInCycle
+            && completedPomodorosToday == other.completedPomodorosToday
+            && internalInterruptionsCount == other.internalInterruptionsCount
+            && externalInterruptionsCount == other.externalInterruptionsCount
+    }
+
+    public enum BlockState: Sendable, Equatable {
+        case completed
+        case current
+        case pending
+    }
+
+    /// Estado de un bloque del macro-ciclo (1...totalBlocksInCycle), común a todas las vistas.
+    public func blockState(at index: Int) -> BlockState {
+        if index <= completedBlocksInCycle {
+            return .completed
+        }
+        if index == currentBlockInCycle && (phase == .work || phase == .overtime) {
+            return .current
+        }
+        return .pending
     }
 }
 
@@ -108,9 +141,13 @@ public actor PomodoroCoreEngine {
     private var calculator: PomodoroStateCalculator?
     private var isPaused: Bool = false
     private var pausedRemainingTime: TimeInterval = 0
-    private var interruptions: [InterruptionRecord] = []
+    private var interruptions: [InterruptionRecord] = [] {
+        didSet { recountTodayInterruptions() }
+    }
     private var completedPomodorosToday: Int = 0
     private var dayStamp: String = PomodoroDay.stamp(Date())
+    private var todayInternalCount: Int = 0
+    private var todayExternalCount: Int = 0
 
     public init(preset: PomodoroPreset = .standard25) {
         self.preset = preset
@@ -160,8 +197,9 @@ public actor PomodoroCoreEngine {
     }
 
     /// Pausa de emergencia del temporizador conservando el tiempo restante.
+    /// El overtime no tiene tiempo restante que conservar, así que no se pausa.
     public func pause(at now: Date = Date()) {
-        guard !isPaused, let calc = calculator, phase != .idle else { return }
+        guard !isPaused, let calc = calculator, phase != .idle, phase != .overtime else { return }
         self.isPaused = true
         self.pausedRemainingTime = calc.computeRemainingTime(at: now)
     }
@@ -173,13 +211,18 @@ public actor PomodoroCoreEngine {
         self.calculator = PomodoroStateCalculator(duration: pausedRemainingTime, startTimestamp: now)
     }
 
-    /// Añade tiempo extra al intervalo actual (por ejemplo, +2 min en descansos).
-    public func addExtraTime(_ additionalSeconds: TimeInterval) {
+    /// Añade tiempo extra a un intervalo con cuenta atrás (trabajo o descanso).
+    /// Devuelve `false` en espera u overtime, donde no hay objetivo que desplazar.
+    @discardableResult
+    public func addExtraTime(_ additionalSeconds: TimeInterval) -> Bool {
+        guard phase == .work || phase == .shortBreak || phase == .longBreak else { return false }
         if isPaused {
             pausedRemainingTime += additionalSeconds
-        } else if let calc = calculator {
-            self.calculator = calc.addingTime(additionalSeconds)
+            return true
         }
+        guard let calc = calculator else { return false }
+        self.calculator = calc.addingTime(additionalSeconds)
+        return true
     }
 
     /// Registra una interrupción sin detener el avance del tiempo (Regla de Cirillo).
@@ -276,10 +319,6 @@ public actor PomodoroCoreEngine {
             progress = 0
         }
 
-        let todays = interruptions.filter { PomodoroDay.isSameDay($0.timestamp, as: now) }
-        let internalCount = todays.filter { $0.type == .internal }.count
-        let externalCount = todays.filter { $0.type == .external }.count
-
         return PomodoroSnapshot(
             phase: phase,
             currentPreset: preset,
@@ -292,8 +331,8 @@ public actor PomodoroCoreEngine {
             progress: progress,
             isPaused: isPaused,
             completedPomodorosToday: completedPomodorosToday,
-            internalInterruptionsCount: internalCount,
-            externalInterruptionsCount: externalCount
+            internalInterruptionsCount: todayInternalCount,
+            externalInterruptionsCount: todayExternalCount
         )
     }
 
@@ -378,5 +417,19 @@ public actor PomodoroCoreEngine {
         guard stamp != dayStamp else { return }
         dayStamp = stamp
         completedPomodorosToday = 0
+        recountTodayInterruptions()
+    }
+
+    private func recountTodayInterruptions() {
+        var internalCount = 0
+        var externalCount = 0
+        for record in interruptions where PomodoroDay.stamp(record.timestamp) == dayStamp {
+            switch record.type {
+            case .internal: internalCount += 1
+            case .external: externalCount += 1
+            }
+        }
+        todayInternalCount = internalCount
+        todayExternalCount = externalCount
     }
 }

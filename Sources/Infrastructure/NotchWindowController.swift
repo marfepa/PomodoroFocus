@@ -25,13 +25,12 @@ public final class NotchWindowController: NSObject {
     public var onMetricsChange: ((DisplayNotchMetrics) -> Void)?
 
     public init(rootView: AnyView) {
-        let screen = NSScreen.main ?? NSScreen.screens.first!
-        let metrics = DisplayNotchMetrics.resolve(for: screen)
-        self.currentMetrics = metrics
+        let screen = DisplayNotchMetrics.preferredScreen()
+        self.currentMetrics = screen.map { DisplayNotchMetrics.resolve(for: $0) } ?? .detached
 
         // Calcular posición inicial fija
         let initialRect = Self.calculatePanelFrame(
-            screen: screen,
+            screenFrame: screen?.frame ?? DisplayNotchMetrics.detached.screenFrame,
             panelWidth: maxPanelWidth,
             panelHeight: maxPanelHeight
         )
@@ -87,11 +86,11 @@ public final class NotchWindowController: NSObject {
 
     /// Actualiza la posición del panel centrado con respecto a la pantalla activa.
     public func updatePosition() {
-        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+        guard let screen = DisplayNotchMetrics.preferredScreen() else { return }
         currentMetrics = DisplayNotchMetrics.resolve(for: screen)
         onMetricsChange?(currentMetrics)
         let frame = Self.calculatePanelFrame(
-            screen: screen,
+            screenFrame: screen.frame,
             panelWidth: maxPanelWidth,
             panelHeight: maxPanelHeight
         )
@@ -102,8 +101,7 @@ public final class NotchWindowController: NSObject {
         updatePosition()
     }
 
-    private static func calculatePanelFrame(screen: NSScreen, panelWidth: CGFloat, panelHeight: CGFloat) -> NSRect {
-        let screenFrame = screen.frame
+    private static func calculatePanelFrame(screenFrame: CGRect, panelWidth: CGFloat, panelHeight: CGFloat) -> NSRect {
         let x = screenFrame.origin.x + (screenFrame.width - panelWidth) / 2.0
         let y = screenFrame.origin.y + screenFrame.height - panelHeight
 

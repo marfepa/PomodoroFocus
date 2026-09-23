@@ -6,9 +6,6 @@ public final class DynamicNotchPanel: NSPanel {
     /// Controla si el panel puede convertirse temporalmente en Key Window (p. ej. para escribir en el campo de texto de interrupciones).
     public var allowsKeyInput: Bool = false
 
-    /// Proveedor opcional para verificar si un punto en coordenadas de ventana debe recibir eventos o traspasarlos.
-    public var hitTestCheck: ((NSPoint) -> Bool)?
-
     public init(contentRect: NSRect) {
         super.init(
             contentRect: contentRect,
