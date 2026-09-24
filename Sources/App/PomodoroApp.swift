@@ -1,0 +1,167 @@
+import SwiftUI
+import AppKit
+
+@main
+struct PomodoroApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @State private var coordinator = SessionCoordinator()
+
+    var body: some Scene {
+        Window("Pomodoro", id: "main") {
+            MainWindowView(coordinator: coordinator)
+                .background(WindowAccessor { window in
+                    coordinator.mainWindow = window
+                    appDelegate.setup(coordinator: coordinator)
+                })
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+        .commands {
+            CommandGroup(replacing: .newItem) {}
+            CommandMenu("Pomodoro") {
+                Button("🎯 Alternar Dynamic Island") {
+                    coordinator.toggleIsland()
+                }
+                .keyboardShortcut("o", modifiers: .command)
+
+                Button("📝 Anotar distracción") {
+                    coordinator.presentQuickCapture()
+                }
+                .keyboardShortcut("i", modifiers: .command)
+
+                Button("🖥️ Mostrar Ventana Principal") {
+                    coordinator.showMainWindow()
+                }
+                .keyboardShortcut("0", modifiers: .command)
+            }
+        }
+    }
+}
+
+/// Helper para capturar la referencia NSWindow de la ventana principal de SwiftUI.
+struct WindowAccessor: NSViewRepresentable {
+    let callback: (NSWindow?) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            self.callback(view.window)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            self.callback(nsView.window)
+        }
+    }
+}
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var windowController: NotchWindowController?
+    private weak var coordinator: SessionCoordinator?
+    private var statusItem: NSStatusItem?
+    private var statusMenu: NSMenu?
+    private var isConfigured: Bool = false
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(.regular)
+    }
+
+    func setup(coordinator: SessionCoordinator) {
+        guard !isConfigured else { return }
+        self.coordinator = coordinator
+        self.isConfigured = true
+
+        let screen = NSScreen.main ?? NSScreen.screens.first!
+        let metrics = DisplayNotchMetrics.resolve(for: screen)
+
+        let surfaceView = DynamicIslandSurface(coordinator: coordinator, metrics: metrics)
+        let windowController = NotchWindowController(rootView: AnyView(surfaceView))
+        windowController.isExpandedProvider = { [weak coordinator] in
+            coordinator?.isExpanded ?? false
+        }
+        windowController.isActiveProvider = { [weak coordinator] in
+            coordinator?.isIslandActive ?? false
+        }
+        self.windowController = windowController
+        coordinator.panel = windowController.panel
+        coordinator.windowController = windowController
+
+        setupStatusItem()
+        // No mostrar de inmediato si está en idle
+        if coordinator.isIslandActive {
+            windowController.show()
+        }
+    }
+
+    private func setupStatusItem() {
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        if let button = item.button {
+            button.image = NSImage(systemSymbolName: "timer", accessibilityDescription: "Pomodoro")
+            button.target = self
+            button.action = #selector(statusBarButtonClicked(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        }
+
+        let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "Pomodoro macOS", action: nil, keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "🖥️ Abrir Ventana Principal", action: #selector(openMainWindowAction), keyEquivalent: "0"))
+        menu.addItem(NSMenuItem(title: "🎯 Alternar Dynamic Island (⌘O)", action: #selector(toggleIslandAction), keyEquivalent: "o"))
+        menu.addItem(NSMenuItem(title: "📝 Anotar distracción (⌘I)", action: #selector(triggerQuickCapture), keyEquivalent: "i"))
+        menu.addItem(NSMenuItem(title: "⚙️ Centrar en pantalla", action: #selector(repositionIsland), keyEquivalent: "r"))
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Salir", action: #selector(terminateApp), keyEquivalent: "q"))
+
+        self.statusMenu = menu
+        self.statusItem = item
+    }
+
+    @objc private func statusBarButtonClicked(_ sender: NSStatusBarButton) {
+        let event = NSApp.currentEvent
+        if event?.type == .rightMouseUp {
+            if let statusMenu {
+                statusItem?.menu = statusMenu
+                statusItem?.button?.performClick(nil)
+                statusItem?.menu = nil
+            }
+        } else {
+            // Clic izquierdo: si la ventana principal está minimizada u oculta, traerla al frente; si no, alternar la isla
+            if let window = coordinator?.mainWindow, window.isMiniaturized || !window.isVisible {
+                coordinator?.showMainWindow()
+            } else {
+                toggleIslandAction()
+            }
+        }
+    }
+
+    @objc private func openMainWindowAction() {
+        coordinator?.showMainWindow()
+    }
+
+    @objc private func toggleIslandAction() {
+        coordinator?.toggleIsland()
+        windowController?.show()
+    }
+
+    @objc private func triggerQuickCapture() {
+        coordinator?.presentQuickCapture()
+        windowController?.show()
+    }
+
+    @objc private func repositionIsland() {
+        windowController?.updatePosition()
+        windowController?.show()
+    }
+
+    @objc private func terminateApp() {
+        NSApp.terminate(nil)
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        coordinator?.showMainWindow()
+        return true
+    }
+}
